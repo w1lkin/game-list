@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<!--
+  本文件由原 index.html 迁移而来：游戏合集分享卡片生成器（Canvas + 二维码）。
+  game-list 升级为社交平台总入口后，分享卡作为「分享」功能独立子页面保留。
+-->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>游戏合集 · 分享卡片</title>
+<style>
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    text-align: center; padding: 40px 16px;
+    background: #f0f0f0;
+  }
+  canvas { border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); max-width: 90vw; }
+  .btn-row { margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  button {
+    padding: 14px 40px; font-size: 17px;
+    background: #81C784; color: #fff; border: none; border-radius: 14px;
+    cursor: pointer; font-weight: 600; transition: opacity 0.2s;
+  }
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary { background: transparent; border: 1.5px solid #81C784; color: #81C784; }
+  p { color: #888; margin-top: 12px; font-size: 14px; }
+</style>
+</head>
+<body>
+<h2 style="color:#555;">🎮 游戏合集 · 分享卡片</h2>
+<canvas id="c"></canvas>
+<p id="status-text">正在加载二维码…</p>
+<div class="btn-row">
+  <button id="dl-btn" onclick="downloadPNG()" disabled>📥 下载 PNG</button>
+  <button class="secondary" onclick="copyImage()" disabled>📋 复制图片</button>
+</div>
+<script>
+// === 游戏列表配置 ===
+const GAMES = {
+  categories: [
+    {
+      emoji: '🎭',
+      name: '模拟体验',
+      games: [
+        { name: '人生重开模拟器', desc: '异世界转生，选择种族天赋经历人生抉择', url: 'https://life-restart-simulator-a7b.pages.dev/' },
+        { name: '替马斯克花钱',     desc: '消费模拟器，挥霍巨额财富购买各类商品',   url: 'https://spend-money-for-musk.pages.dev/' },
+      ],
+    },
+    {
+      emoji: '🧩',
+      name: '休闲娱乐',
+      games: [
+        { name: '翻牌消消乐', desc: '日系清新记忆配对，三种难度计时挑战', url: 'https://flop-39t.pages.dev/' },
+        { name: '贪吃蛇',     desc: '经典贪吃蛇，键触双控高分排行',       url: 'https://greedy-snake-3wq.pages.dev/' },
+        { name: '扫雷',       desc: '经典扫雷三档难度，支持触屏长按插旗',   url: 'https://mine-sweeper-2f1.pages.dev/' },
+        { name: '中午吃什么',   desc: '老虎机滚动抽选，治愈你的选择困难症',  url: 'https://lunch-1t7.pages.dev/' },
+      ],
+    },
+    {
+      emoji: '🔮',
+      name: '玄学趣玩',
+      games: [
+        { name: '掷筊问卜', desc: '闽南掷筊文化塔罗占卜，圣杯笑杯阴杯判定', url: 'https://holy-grail-b8u.pages.dev/' },
+      ],
+    },
+    {
+      emoji: '🧪',
+      name: '脑力挑战',
+      games: [
+        { name: '人类基准', desc: '7项认知测试，反应速度记忆瞄准全方位挑战', url: 'https://human-bench.pages.dev/' },
+      ],
+    },
+  ],
+  totalGames: 0, // 由下方自动计算
+  slogan: '',     // 由下方自动计算
+};
+
+// === 自动统计 ===
+const launchedGames = [];
+GAMES.categories.forEach((cat) => {
+  cat.games.forEach((game) => {
+    if (game.url) launchedGames.push(game);
+  });
+});
+GAMES.totalGames = launchedGames.length;
+GAMES.slogan = '共 ' + launchedGames.length + ' 款游戏 · AI 驱动开发 · 持续更新中';
+
+// === 画布设置（高度根据游戏数量自适应） ===
+const W = 1200;
+const CARD_X = 70;
+const CARD_TOP = 310;
+const CARD_PADDING_TOP = 60;
+const CAT_HEADER_H = 90;    // 分类标题 + 下划线
+const GAME_ITEM_H = 151;    // 单个游戏条目高度（135 + 16 gap）
+const CAT_GAP = 24;         // 分类之间的间距
+const CARD_PADDING_BOTTOM = 30;
+const BOTTOM_AREA = 120;    // 底部标语 + 装饰空间
+
+const totalGames = GAMES.categories.reduce((s, c) => s + c.games.length, 0);
+const numCats = GAMES.categories.length;
+const cardH = CARD_PADDING_TOP + numCats * CAT_HEADER_H + totalGames * GAME_ITEM_H + (numCats - 1) * CAT_GAP + CARD_PADDING_BOTTOM;
+const H = CARD_TOP + cardH + BOTTOM_AREA;
+const cardW = W - CARD_X * 2;
+
+const canvas = document.getElementById("c");
+canvas.width = W; canvas.height = H;
+const ctx = canvas.getContext("2d");
+
+// === 日系清新主题色 ===
+const PRIMARY = '#81C784';
+const PRIMARY_LIGHT = '#A5D6A7';
+const CARD_BG = '#FFFFFF';
+const TEXT_TITLE = '#333';
+const TEXT_SUB = '#888';
+const TEXT_HINT = '#aaa';
+const DIVIDER_COLOR = '#C8E6C9';
+
+// === 工具：圆角矩形 ===
+function rr(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+// === 工具：文字居中 ===
+function textCenter(text, y, font, color) {
+  ctx.textAlign = 'center';
+  ctx.fillStyle = color;
+  ctx.font = font;
+  ctx.fillText(text, W / 2, y);
+}
+
+// === 收集所有游戏卡片位置（用于点击跳转） ===
+const gameCards = []; // { x, y, w, h, url }
+const allGames = [];
+GAMES.categories.forEach((cat) => {
+  cat.games.forEach((game) => {
+    if (game.url) allGames.push(game);
+  });
+});
+
+// === 第一步：绘制不需要二维码的部分 ===
+(function drawBase() {
+  // --- 背景渐变色 ---
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, '#E8F5E9');
+  bgGrad.addColorStop(0.35, '#FFF9C4');
+  bgGrad.addColorStop(1, '#FFFDE7');
+  ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, W, H);
+
+  // --- 装饰圆圈 ---
+  ctx.globalAlpha = 0.10;
+  [
+    { x: 160, y: 340, r: 200, c: PRIMARY },
+    { x: 980, y: 260, r: 140, c: PRIMARY_LIGHT },
+    { x: 1060, y: 1150, r: 240, c: '#FFE082' },
+    { x: 180, y: 1280, r: 130, c: PRIMARY },
+    { x: 600, y: 180, r: 90,  c: PRIMARY_LIGHT },
+  ].forEach(d => {
+    ctx.fillStyle = d.c;
+    ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // --- 内容卡片 ---
+  ctx.fillStyle = CARD_BG;
+  ctx.shadowColor = 'rgba(0,0,0,0.06)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 10;
+  rr(ctx, CARD_X, CARD_TOP, cardW, cardH, 48); ctx.fill();
+  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+
+  // --- 标题 ---
+  textCenter('🎮  游 戏 合 集', 180, "bold 76px -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif", PRIMARY);
+
+  // --- 副标题 ---
+  textCenter('用 AI 打造的趣味小游戏', 260, "34px -apple-system, 'PingFang SC', sans-serif", TEXT_SUB);
+
+  // --- 顶部装饰虚线 ---
+  ctx.strokeStyle = PRIMARY_LIGHT; ctx.lineWidth = 3;
+  ctx.setLineDash([14, 10]);
+  ctx.beginPath(); ctx.moveTo(280, 300); ctx.lineTo(W - 280, 300); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // --- 分类和游戏 ---
+  let curY = CARD_TOP + CARD_PADDING_TOP;
+
+  GAMES.categories.forEach((cat, ci) => {
+    // 分类标题
+    ctx.textAlign = 'left';
+    ctx.fillStyle = PRIMARY;
+    ctx.font = "600 42px -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif";
+    ctx.fillText(cat.emoji + '  ' + cat.name, CARD_X + 50, curY + 42);
+
+    // 标题下划线
+    ctx.strokeStyle = DIVIDER_COLOR; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(CARD_X + 50, curY + 60);
+    ctx.lineTo(CARD_X + cardW - 50, curY + 60);
+    ctx.stroke();
+
+    curY += 90;
+
+    // 游戏列表
+    cat.games.forEach((game, gi) => {
+      const gx = CARD_X + 40, gy = curY, gw = cardW - 80, gh = 135;
+
+      // 游戏条目背景卡片
+      ctx.fillStyle = '#FAFAFA';
+      rr(ctx, gx, gy, gw, gh, 14); ctx.fill();
+      ctx.strokeStyle = '#EEEEEE'; ctx.lineWidth = 1;
+      rr(ctx, gx, gy, gw, gh, 14); ctx.stroke();
+
+      // 游戏序号
+      const gameIdx = GAMES.categories.slice(0, ci).reduce((s, c) => s + c.games.length, 0) + gi + 1;
+      ctx.fillStyle = '#fff';
+      ctx.strokeStyle = PRIMARY; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(gx + 36, gy + gh / 2, 20, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = PRIMARY;
+      ctx.font = "bold 20px -apple-system, 'PingFang SC', sans-serif";
+      ctx.textAlign = 'center';
+      ctx.fillText(gameIdx.toString(), gx + 36, gy + gh / 2 + 7);
+
+      // 游戏名称
+      ctx.textAlign = 'left';
+      ctx.fillStyle = TEXT_TITLE;
+      ctx.font = "600 32px -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif";
+      ctx.fillText(game.name, gx + 72, gy + 44);
+
+      // 游戏描述
+      ctx.fillStyle = TEXT_SUB;
+      ctx.font = "24px -apple-system, 'PingFang SC', sans-serif";
+      ctx.fillText(game.desc, gx + 72, gy + 80);
+
+      // 二维码占位框（稍后图片覆盖）/ 未上线标记
+      const qrSize = 100;
+      const qrX = gx + gw - 36 - qrSize;
+      const qrY = gy + (gh - qrSize) / 2;
+
+      if (game.url) {
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = PRIMARY_LIGHT; ctx.lineWidth = 2;
+        rr(ctx, qrX - 4, qrY - 4, qrSize + 8, qrSize + 8, 12); ctx.fill(); ctx.stroke();
+        // 存下 QR 坐标，供异步加载后绘制
+        game._qrX = qrX;
+        game._qrY = qrY;
+        game._qrSize = qrSize;
+      } else {
+        // 未上线游戏显示「即将上线」标签
+        ctx.fillStyle = '#FFF3E0';
+        ctx.strokeStyle = '#FFB74D'; ctx.lineWidth = 2;
+        rr(ctx, qrX - 4, qrY - 4, qrSize + 8, qrSize + 8, 12); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#E65100';
+        ctx.font = "bold 16px -apple-system, 'PingFang SC', sans-serif";
+        ctx.textAlign = 'center';
+        ctx.fillText('即将上线', qrX + qrSize / 2, qrY + qrSize / 2 + 6);
+      }
+
+      curY += gh + 16;
+
+      // 记录卡片位置，用于点击跳转
+      if (game.url) gameCards.push({ x: gx, y: gy, w: gw, h: gh, url: game.url });
+    });
+
+    curY += 24;
+  });
+
+  // --- 底部标语 ---
+  textCenter(GAMES.slogan, H - 72, "italic 28px -apple-system, 'PingFang SC', sans-serif", TEXT_HINT);
+
+  // 底部装饰虚线
+  ctx.strokeStyle = PRIMARY_LIGHT; ctx.lineWidth = 2;
+  ctx.setLineDash([10, 8]);
+  ctx.beginPath(); ctx.moveTo(300, H - 48); ctx.lineTo(W - 300, H - 48); ctx.stroke();
+  ctx.setLineDash([]);
+})();
+
+// === 点击游戏卡片跳转 ===
+{
+  function getCanvasScale() {
+    const rect = canvas.getBoundingClientRect();
+    return { scaleX: W / rect.width, scaleY: H / rect.height, left: rect.left, top: rect.top };
+  }
+
+  function hitTest(e) {
+    const { scaleX, scaleY, left, top } = getCanvasScale();
+    const cx = (e.clientX - left) * scaleX;
+    const cy = (e.clientY - top) * scaleY;
+    return gameCards.find(c => cx >= c.x && cx <= c.x + c.w && cy >= c.y && cy <= c.y + c.h) || null;
+  }
+
+  canvas.addEventListener('click', function(e) {
+    const hit = hitTest(e);
+    if (hit && hit.url) window.open(hit.url, '_blank');
+  });
+
+  canvas.addEventListener('mousemove', function(e) {
+    canvas.style.cursor = hitTest(e) ? 'pointer' : 'default';
+  });
+}
+
+// === 第二步：加载所有二维码并绘制 ===
+const QS = 100;
+const QR_API = 'https://api.qrserver.com/v1/create-qr-code/?size=' + QS + 'x' + QS + '&margin=4&data=';
+
+let qrLoadedCount = 0;
+
+allGames.forEach((game) => {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    ctx.drawImage(img, game._qrX, game._qrY, game._qrSize, game._qrSize);
+    qrLoadedCount++;
+    checkAllLoaded();
+  };
+  img.onerror = function() {
+    // 二维码加载失败时绘制文字提示
+    ctx.fillStyle = TEXT_HINT;
+    ctx.font = "14px -apple-system, 'PingFang SC', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.fillText('扫码访问', game._qrX + game._qrSize / 2, game._qrY + game._qrSize / 2 + 5);
+    qrLoadedCount++;
+    checkAllLoaded();
+  };
+  img.src = QR_API + encodeURIComponent(game.url);
+});
+
+function checkAllLoaded() {
+  if (qrLoadedCount >= allGames.length) {
+    document.getElementById('dl-btn').disabled = false;
+    document.querySelector('button.secondary').disabled = false;
+    document.getElementById('status-text').textContent = '点击下方按钮下载 PNG，发到微信群或上传为 og:image';
+  }
+}
+
+// === 下载 PNG ===
+function downloadPNG() {
+  const a = document.createElement('a');
+  a.download = 'game-collection-share-card.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+// === 复制到剪贴板 ===
+function copyImage() {
+  const btn = document.querySelector('button.secondary');
+  canvas.toBlob(function(blob) {
+    const item = new ClipboardItem({ 'image/png': blob });
+    navigator.clipboard.write([item]).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = '✅ 已复制';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    }).catch(() => {
+      alert('复制失败，请使用下载按钮');
+    });
+  });
+}
+</script>
+</body>
+</html>
