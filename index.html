@@ -6,8 +6,8 @@
   <title>游戏合集 · 一起玩</title>
 <style>
   :root {
-    --primary: #81C784;
-    --primary-d: #66BB6A;
+    --primary: #07C160;
+    --primary-d: #06A850;
     --bg: #f3f6f4;
     --card: #ffffff;
     --text: #2e3a33;
@@ -33,11 +33,11 @@
   }
   .nick { font-size: 14px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .btn {
-    border: none; border-radius: 22px; padding: 9px 18px; font-size: 14px; font-weight: 600;
-    cursor: pointer; background: var(--primary); color: #fff; transition: opacity .15s;
+    border: none; border-radius: 8px; padding: 10px 18px; font-size: 15px; font-weight: 600;
+    cursor: pointer; background: var(--primary); color: #fff; transition: background .15s, opacity .15s;
   }
-  .btn:active { opacity: .85; }
-  .btn.ghost { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+  .btn:active { background: var(--primary-d); opacity: .9; }
+  .btn.ghost { background: #f2f2f2; color: #555; border: none; }
   .btn[disabled] { opacity: .5; }
 
   .online-banner {
@@ -81,23 +81,34 @@
     padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); animation: up .2s ease;
   }
   @keyframes up { from { transform: translateY(100%); } to { transform: translateY(0); } }
-  .sheet-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .sheet-head { text-align: center; padding: 6px 0 10px; }
+  .wx-badge {
+    width: 54px; height: 54px; border-radius: 14px; background: var(--primary);
+    margin: 0 auto 8px; display: flex; align-items: center; justify-content: center;
+  }
+  .wx-badge svg { width: 30px; height: 30px; }
+  .sheet-head p { margin: 0; font-size: 14px; color: var(--sub); }
+  .sheet-tabs { display: flex; gap: 28px; margin: 4px 4px 18px; }
   .sheet-tabs button {
-    flex: 1; padding: 10px; border: none; border-radius: 12px; background: var(--bg);
-    font-size: 15px; font-weight: 600; color: var(--sub); cursor: pointer;
+    flex: none; padding: 8px 2px; border: none; background: none;
+    font-size: 17px; font-weight: 600; color: #999; cursor: pointer; position: relative;
   }
-  .sheet-tabs button.active { background: var(--primary); color: #fff; }
+  .sheet-tabs button.active { color: var(--primary); }
+  .sheet-tabs button.active::after {
+    content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+    bottom: -6px; width: 22px; height: 3px; border-radius: 2px; background: var(--primary);
+  }
   .sheet input[type=text], .sheet input[type=password] {
-    width: 100%; padding: 13px 14px; margin-bottom: 12px; border: 1.5px solid var(--line);
-    border-radius: 12px; font-size: 15px; outline: none;
+    width: 100%; padding: 13px 14px; margin-bottom: 12px; border: 1px solid #e3e3e3;
+    border-radius: 8px; font-size: 15px; outline: none; background: #f7f7f7;
   }
-  .sheet input:focus { border-color: var(--primary); }
+  .sheet input:focus { border-color: var(--primary); background: #fff; }
   .avatar-pick {
     display: block; font-size: 13px; color: var(--sub); margin-bottom: 12px;
   }
   .avatar-pick input { margin-top: 6px; font-size: 13px; }
-  .msg { color: #e53935; font-size: 13px; min-height: 18px; margin-bottom: 8px; }
-  .sheet .btn { width: 100%; margin-top: 4px; padding: 13px; }
+  .msg { color: #fa5151; font-size: 13px; min-height: 18px; margin-bottom: 8px; }
+  .sheet .btn { width: 100%; margin-top: 4px; padding: 13px; font-size: 17px; border-radius: 8px; }
 
   #toast {
     position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%);
@@ -130,6 +141,12 @@
 <!-- 登录 / 注册 -->
 <div id="authModal" class="modal hidden">
   <div class="sheet">
+    <div class="sheet-head">
+      <div class="wx-badge">
+        <svg viewBox="0 0 24 24" fill="#fff"><path d="M9 3C4.9 3 1.5 5.9 1.5 9.4c0 2 1.1 3.8 2.9 5L3.4 17l2.4-1.2c.9.3 1.9.4 2.9.4h.6a5.6 5.6 0 0 1-.2-1.5C9.1 11.1 12.6 8.4 16.9 8.4h.6C16.7 5.3 13.2 3 9 3Zm-2.4 4.2a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm4.8 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/><path d="M22.5 14.1c0-2.8-2.8-5.1-6.2-5.1s-6.2 2.3-6.2 5.1 2.8 5.1 6.2 5.1c.7 0 1.4-.1 2.1-.3l1.9 1-.5-1.6c1.5-.9 2.7-2.3 2.7-3.9Zm-8.2-.9a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Zm3.9 0a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Z"/></svg>
+      </div>
+      <p>登录后畅玩全部游戏</p>
+    </div>
     <div class="sheet-tabs">
       <button data-tab="login" class="active" onclick="switchAuth('login')">登录</button>
       <button data-tab="register" onclick="switchAuth('register')">注册</button>
@@ -210,6 +227,8 @@ function boot() {
     GP.getUser().then(u => u ? onLogin(u) : onLogout()).catch(onLogout);
   } else {
     onLogout();
+    // 从游戏跳过来登录：自动弹出登录框
+    if (new URLSearchParams(location.search).get('redirect')) openModal('authModal');
   }
   loadOnline();
   setInterval(loadOnline, 15000);
@@ -363,6 +382,17 @@ async function submitAuth() {
       } catch (e) { /* 头像失败不影响账号 */ }
     }
     onLogin(user);
+    // 登录后带回游戏（自动带上 token 实现 SSO）
+    const redirect = new URLSearchParams(location.search).get('redirect');
+    if (redirect) {
+      try {
+        const u = new URL(redirect);
+        u.searchParams.set('token', GP.getToken());
+        u.searchParams.set('api', GP.API_BASE);
+        location.replace(u.toString());
+        return;
+      } catch (e) {}
+    }
     closeModal('authModal');
     toast(authTab === 'register' ? '注册成功 🎉' : '登录成功');
     loadOnline();
