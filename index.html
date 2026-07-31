@@ -379,7 +379,10 @@ async function submitAuth() {
       try {
         const url = await GP.uploadAvatar(file);
         user = await GP.updateProfile({ avatar_url: url });
-      } catch (e) { /* 头像失败不影响账号 */ }
+      } catch (e) {
+        // 头像失败不影响账号；额度满时给出提示
+        if (e.message === 'quota_exceeded') msg.textContent = '本月头像上传额度已满，已为你完成注册，可稍后再试';
+      }
     }
     onLogin(user);
     // 登录后带回游戏（自动带上 token 实现 SSO）
