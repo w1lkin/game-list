@@ -479,6 +479,8 @@ function onLogin(user) {
     `<div class="me-info">
        <div class="me-name">${esc(user.nickname)}</div>
      </div>`;
+  box.style.cursor = '';
+  box.onclick = null;
   // 显示编辑资料/退出登录（在分享卡片下方菜单中）
   document.getElementById('meLoggedActions').style.display = '';
   // 显示个人记录区块并加载数据
@@ -492,8 +494,10 @@ function onLogout() {
     `<img class="me-avatar" src="${DEFAULT_AVATAR}">` +
     `<div class="me-info">
        <div class="me-name">未登录</div>
-       <div class="me-sub">登录后畅玩全部小游戏，成绩进入天梯榜</div>
+       <div class="me-sub">点击登录 / 注册，畅玩全部小游戏</div>
      </div>`;
+  box.style.cursor = 'pointer';
+  box.onclick = () => openModal('authModal');
   // 隐藏编辑资料/退出登录
   document.getElementById('meLoggedActions').style.display = 'none';
   // 隐藏个人记录区块
