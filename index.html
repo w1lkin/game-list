@@ -156,7 +156,7 @@
 </head>
 <body>
 <header class="topbar">
-  <div class="brand">🎮 小游戏<small>一起玩</small></div>
+  <div class="brand">🎮 小游戏</div>
 </header>
 
 <!-- 游戏页 -->
@@ -405,7 +405,6 @@ function onLogin(user) {
     `<img class="me-avatar" src="${user.avatar_url || DEFAULT_AVATAR}" onerror="this.src='${DEFAULT_AVATAR}'">` +
     `<div class="me-info">
        <div class="me-name">${esc(user.nickname)}</div>
-       <div class="me-sub">已登录 · 成绩进入天梯榜</div>
      </div>` +
     `<div class="me-logged-actions">
        <button class="btn ghost" onclick="openModal('profileModal')">编辑资料</button>
