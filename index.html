@@ -45,7 +45,7 @@
   .online-banner.hidden { display: none; }
   .online-label { font-size: 13px; color: var(--primary-d); white-space: nowrap; font-weight: 600; }
   .online-avatars { display: flex; gap: 6px; }
-  .online-avatars img { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); object-fit: cover; background: #cfd8dc; }
+  .online-avatars img { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); object-fit: cover; background: #e0e0e0; }
   .online-more { font-size: 12px; color: var(--sub); white-space: nowrap; }
 
   main { padding: 8px 14px; }
@@ -59,10 +59,11 @@
   .card:active { transform: scale(.98); box-shadow: 0 1px 6px rgba(0,0,0,.08); }
   .card-name { font-size: 16px; font-weight: 700; }
   .card-desc { font-size: 12px; color: var(--sub); line-height: 1.4; min-height: 34px; }
-  .card-best { font-size: 12px; color: var(--primary-d); margin-top: 2px; overflow-x: auto; white-space: nowrap; display: flex; gap: 8px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-  .card-best::-webkit-scrollbar { display: none; }
+  .card-best { font-size: 12px; color: var(--primary-d); margin-top: 2px; position: relative; overflow: hidden; min-height: 18px; }
   .card-best b { color: var(--text); font-weight: 700; }
   .card-best-label { flex: none; }
+  .card-best-track { display: flex; flex-direction: column; transition: transform .4s ease; }
+  .card-best-item { white-space: nowrap; line-height: 1.6; }
 
   .modal {
     position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.45);
@@ -135,7 +136,7 @@
   }
   .me-avatar {
     width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
-    background: #cfd8dc; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    background: #e0e0e0; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.12);
   }
   .me-info { flex: 1; min-width: 0; }
   .me-name { font-size: 18px; font-weight: 700; }
@@ -374,7 +375,8 @@ async function loadOnline() {
 }
 
 // === 最强者（各游戏榜首，公开接口）===
-// 有难度区分的游戏按难度分别展示榜首，可横向滚动
+// 有难度区分的游戏按难度分别展示榜首，自动上下翻页
+const _bestTimers = {};
 async function loadBests() {
   for (const cat of GAMES.categories) {
     for (const g of cat.games) {
@@ -382,16 +384,18 @@ async function loadBests() {
       const el = document.getElementById('best-' + g.id);
       try {
         if (g.diffs && g.diffs.length) {
-          // 多难度游戏：拉取各难度 top 1，横向滚动
+          // 多难度游戏：拉取各难度 top 1，纵向排列，自动翻页
           const results = await Promise.all(
             g.diffs.map(d => GP.getLeaderboard(g.id, 1, d.key).then(items => ({ label: d.label, top: items[0] })))
           );
-          const parts = results.map(r =>
-            r.top ? `<span><b>${r.label}</b> ${esc(r.top.nickname)} ${fmtScore(r.top.score)}</span>` : ''
-          ).filter(Boolean);
-          if (el) el.innerHTML = parts.length
-            ? '<span class="card-best-label">👑</span>' + parts.join('')
-            : '👑 暂无记录';
+          const items = results.filter(r => r.top);
+          if (!items.length) { if (el) el.textContent = '👑 暂无记录'; continue; }
+          if (el) {
+            el.innerHTML = '<div class="card-best-track" id="best-track-' + g.id + '">' +
+              items.map(r => '<span class="card-best-item">👑 ' + esc(r.label) + ' <b>' + esc(r.top.nickname) + '</b> ' + fmtScore(r.top.score) + '</span>').join('') +
+              '</div>';
+            startBestFlip(g.id, items.length);
+          }
         } else {
           // 无难度区分：取总榜 top 1
           const items = await GP.getLeaderboard(g.id, 1);
@@ -405,6 +409,20 @@ async function loadBests() {
       } catch (e) { if (el) el.textContent = '👑 加载失败'; }
     }
   }
+}
+
+// 自动翻页：每 3 秒切换一条，循环
+function startBestFlip(gameId, count) {
+  if (count <= 1) return;
+  const track = document.getElementById('best-track-' + gameId);
+  if (!track) return;
+  let idx = 0;
+  const step = () => {
+    idx = (idx + 1) % count;
+    track.style.transform = 'translateY(-' + (idx * 100 / count) + '%)';
+  };
+  clearInterval(_bestTimers[gameId]);
+  _bestTimers[gameId] = setInterval(step, 3000);
 }
 
 // === Tab 切换 ===
