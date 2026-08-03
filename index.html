@@ -300,6 +300,20 @@ const GAMES = {
 // 灰色圆形底色由 CSS background 提供，真实头像通过 object-fit:cover 覆盖。
 const DEFAULT_AVATAR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
+// 扫雷天梯 score = base + 实际用时(秒)，展示时需减去 base 还原为纯用时
+const MINE_BASES = { easy: 100000, medium: 300000, hard: 600000 };
+function fmtLeaderScore(gameId, difficulty, rawScore) {
+  if (gameId === 'mine-sweeper') {
+    const base = MINE_BASES[difficulty] || 100000;
+    const s = (Number(rawScore) || 0) - base;
+    return (Number.isInteger(s) ? String(s) : s.toFixed(1)) + 's';
+  }
+  // 贪吃蛇：蛇长度
+  if (gameId === 'greedy-snake') return fmtScore(rawScore) + ' 节';
+  // 其他游戏
+  return fmtScore(rawScore);
+}
+
 let GP = null;
 let currentUser = null;
 let authTab = 'login';
@@ -428,7 +442,7 @@ async function loadBests() {
           if (!items.length) { if (el) el.textContent = '👑 暂无记录'; continue; }
           if (el) {
             el.innerHTML = '<div class="card-best-track" id="best-track-' + g.id + '">' +
-              items.map(r => '<span class="card-best-item">👑 ' + esc(r.label) + ' <b>' + esc(r.top.nickname) + '</b> ' + fmtScore(r.top.score) + '</span>').join('') +
+              items.map(r => '<span class="card-best-item">👑 ' + esc(r.label) + ' <b>' + esc(r.top.nickname) + '</b> ' + fmtLeaderScore(g.id, r.top.meta ? (typeof r.top.meta === 'string' ? JSON.parse(r.top.meta).difficulty : r.top.meta.difficulty) : null, r.top.score) + '</span>').join('') +
               '</div>';
             startBestFlip(g.id, items.length);
           }
@@ -548,17 +562,19 @@ async function loadMyRecords() {
     if (recent10.length) {
       recentEl.innerHTML = recent10.map(r => {
         let diffLabel = '';
+        let diffKey = null;
         try {
           const m = typeof r.meta === 'string' ? JSON.parse(r.meta) : (r.meta || {});
           if (m.difficulty) {
             const dm = { easy: '简', medium: '中', hard: '难' };
             diffLabel = ' · ' + (dm[m.difficulty] || m.difficulty);
+            diffKey = m.difficulty;
           }
         } catch (e) {}
         const time = new Date(r.created_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         return `<div class="me-record-item">
           <span class="me-record-game">${esc(r.gameName)}${diffLabel}</span>
-          <span class="me-record-score">${fmtScore(r.score)}</span>
+          <span class="me-record-score">${fmtLeaderScore(r.gameId, diffKey, r.score)}</span>
           <span class="me-record-time">${time}</span>
         </div>`;
       }).join('');
@@ -600,9 +616,10 @@ async function loadMyRecords() {
     if (bestList.length) {
       bestEl.innerHTML = bestList.map(b => {
         const diffLabel = b.difficulty ? ' · ' + b.difficulty : '';
+        const diffKey = b.difficulty ? { '简': 'easy', '中': 'medium', '难': 'hard' }[b.difficulty] || null : null;
         return `<div class="me-record-item">
           <span class="me-record-game">${esc(b.gameName)}${diffLabel}</span>
-          <span class="me-record-score">${fmtScore(b.score)}</span>
+          <span class="me-record-score">${fmtLeaderScore(b.gameId, diffKey, b.score)}</span>
         </div>`;
       }).join('');
     } else {
