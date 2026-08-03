@@ -137,12 +137,28 @@
   .me-avatar {
     width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
     background: #e0e0e0; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.12);
+    flex-shrink: 0;
   }
   .me-info { flex: 1; min-width: 0; }
   .me-name { font-size: 18px; font-weight: 700; }
   .me-sub { font-size: 12px; color: var(--sub); margin-top: 4px; }
-  .me-logged-actions { display: flex; gap: 10px; margin-top: 14px; }
-  .me-logged-actions .btn { flex: 1; }
+  /* 个人记录区块 */
+  .me-records { margin-top: 14px; }
+  .me-section-title {
+    font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 8px;
+  }
+  .me-record-list {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .me-record-item {
+    background: var(--card); border-radius: 12px; padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.03); font-size: 13px;
+  }
+  .me-record-game { font-weight: 600; color: var(--text); flex: 1; min-width: 0; }
+  .me-record-score { color: var(--primary-d); font-weight: 700; white-space: nowrap; }
+  .me-record-time { font-size: 11px; color: var(--sub); white-space: nowrap; }
+  .me-record-empty { text-align: center; color: var(--sub); font-size: 13px; padding: 12px 0; }
   .me-menu {
     margin-top: 14px; background: var(--card); border-radius: 16px; overflow: hidden;
     box-shadow: 0 2px 10px rgba(0,0,0,.04);
@@ -155,6 +171,7 @@
   .me-menu-item:active { background: #fafafa; }
   .me-menu-ico { font-size: 20px; }
   .me-menu-arrow { margin-left: auto; color: #ccc; font-size: 16px; }
+  .me-menu-item-group { border-top: 1px solid var(--line); }
 </style>
 </head>
 <body>
@@ -177,10 +194,29 @@
 <section id="pageMe" class="page">
   <main>
     <div class="me-profile" id="meProfile"></div>
+    <!-- 个人游戏记录（登录后显示） -->
+    <div class="me-records" id="meRecords" style="display:none">
+      <!-- 近期游戏记录 -->
+      <div class="me-section-title">🕐 近期游戏记录</div>
+      <div class="me-record-list" id="meRecentScores"></div>
+      <!-- 个人最强记录 -->
+      <div class="me-section-title" style="margin-top:18px">🏆 个人最强记录</div>
+      <div class="me-record-list" id="meBestScores"></div>
+    </div>
     <div class="me-menu">
       <div class="me-menu-item" onclick="openShare()">
         <span class="me-menu-ico">📤</span>分享合集卡片
         <span class="me-menu-arrow">›</span>
+      </div>
+      <div id="meLoggedActions" class="me-menu-item-group" style="display:none">
+        <div class="me-menu-item" onclick="openModal('profileModal')">
+          <span class="me-menu-ico">✏️</span>编辑资料
+          <span class="me-menu-arrow">›</span>
+        </div>
+        <div class="me-menu-item" onclick="doLogout()">
+          <span class="me-menu-ico">🚪</span>退出登录
+          <span class="me-menu-arrow">›</span>
+        </div>
       </div>
     </div>
   </main>
@@ -345,12 +381,12 @@ function openGame(g) {
   const u = new URL(g.url);
   const token = GP.getToken();
   if (token) u.searchParams.set('token', token);
-  window.open(u.toString(), '_blank');
+  location.href = u.toString();
 }
 
 function openShare() {
   const token = GP.getToken();
-  window.open('share-card.html' + (token ? ('?token=' + encodeURIComponent(token)) : ''), '_blank');
+  location.href = 'share-card.html' + (token ? ('?token=' + encodeURIComponent(token)) : '');
 }
 
 // === 在线横幅（全局在线，公开接口）===
@@ -442,11 +478,12 @@ function onLogin(user) {
     `<img class="me-avatar" src="${user.avatar_url || DEFAULT_AVATAR}" onerror="this.src='${DEFAULT_AVATAR}'">` +
     `<div class="me-info">
        <div class="me-name">${esc(user.nickname)}</div>
-     </div>` +
-    `<div class="me-logged-actions">
-       <button class="btn ghost" onclick="openModal('profileModal')">编辑资料</button>
-       <button class="btn ghost" onclick="doLogout()">退出登录</button>
      </div>`;
+  // 显示编辑资料/退出登录（在分享卡片下方菜单中）
+  document.getElementById('meLoggedActions').style.display = '';
+  // 显示个人记录区块并加载数据
+  document.getElementById('meRecords').style.display = '';
+  loadMyRecords();
 }
 function onLogout() {
   currentUser = null;
@@ -456,12 +493,123 @@ function onLogout() {
     `<div class="me-info">
        <div class="me-name">未登录</div>
        <div class="me-sub">登录后畅玩全部小游戏，成绩进入天梯榜</div>
-     </div>` +
-    `<div class="me-logged-actions">
-       <button class="btn" onclick="openModal('authModal')">登录 / 注册</button>
      </div>`;
+  // 隐藏编辑资料/退出登录
+  document.getElementById('meLoggedActions').style.display = 'none';
+  // 隐藏个人记录区块
+  document.getElementById('meRecords').style.display = 'none';
 }
 function doLogout() { GP.logout(); onLogout(); toast('已退出'); }
+
+// === 加载个人游戏记录 ===
+async function loadMyRecords() {
+  const recentEl = document.getElementById('meRecentScores');
+  const bestEl = document.getElementById('meBestScores');
+  recentEl.innerHTML = '<div class="me-record-empty">加载中…</div>';
+  bestEl.innerHTML = '<div class="me-record-empty">加载中…</div>';
+
+  // 收集所有非 skip 的游戏
+  const allGames = [];
+  GAMES.categories.forEach(cat => {
+    cat.games.forEach(g => {
+      if (!g.skip) allGames.push(g);
+    });
+  });
+
+  try {
+    // 并行拉取所有游戏的个人成绩
+    const results = await Promise.all(
+      allGames.map(async (g) => {
+        const items = await GP.getMyScores(g.id, 20);
+        return { game: g, items };
+      })
+    );
+
+    // --- 近期记录：按时间倒序，取最近 10 条 ---
+    let recentAll = [];
+    results.forEach(({ game, items }) => {
+      items.forEach(it => {
+        recentAll.push({
+          gameName: game.name,
+          gameId: game.id,
+          score: it.score,
+          meta: it.meta,
+          created_at: it.created_at,
+        });
+      });
+    });
+    recentAll.sort((a, b) => b.created_at - a.created_at);
+    const recent10 = recentAll.slice(0, 10);
+
+    if (recent10.length) {
+      recentEl.innerHTML = recent10.map(r => {
+        let diffLabel = '';
+        try {
+          const m = typeof r.meta === 'string' ? JSON.parse(r.meta) : (r.meta || {});
+          if (m.difficulty) {
+            const dm = { easy: '简', medium: '中', hard: '难' };
+            diffLabel = ' · ' + (dm[m.difficulty] || m.difficulty);
+          }
+        } catch (e) {}
+        const time = new Date(r.created_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        return `<div class="me-record-item">
+          <span class="me-record-game">${esc(r.gameName)}${diffLabel}</span>
+          <span class="me-record-score">${fmtScore(r.score)}</span>
+          <span class="me-record-time">${time}</span>
+        </div>`;
+      }).join('');
+    } else {
+      recentEl.innerHTML = '<div class="me-record-empty">暂无游戏记录，快去玩一局吧</div>';
+    }
+
+    // --- 个人最强记录：每个游戏取最高分 ---
+    let bestList = [];
+    results.forEach(({ game, items }) => {
+      if (!items.length) return;
+      // 无难度区分的游戏：取最高分
+      if (!game.diffs || !game.diffs.length) {
+        let best = items[0];
+        items.forEach(it => { if (it.score > best.score) best = it; });
+        bestList.push({ gameName: game.name, gameId: game.id, score: best.score, difficulty: null });
+      } else {
+        // 有难度区分的游戏：每个难度取最高分
+        game.diffs.forEach(d => {
+          const diffItems = items.filter(it => {
+            try {
+              const m = typeof it.meta === 'string' ? JSON.parse(it.meta) : (it.meta || {});
+              return m.difficulty === d.key;
+            } catch (e) { return false; }
+          });
+          if (!diffItems.length) return;
+          let best = diffItems[0];
+          diffItems.forEach(it => { if (it.score > best.score) best = it; });
+          bestList.push({ gameName: game.name, gameId: game.id, score: best.score, difficulty: d.label });
+        });
+      }
+    });
+    // 按游戏名分组排序
+    bestList.sort((a, b) => {
+      if (a.gameName !== b.gameName) return a.gameName.localeCompare(b.gameName);
+      return (a.difficulty || '').localeCompare(b.difficulty || '');
+    });
+
+    if (bestList.length) {
+      bestEl.innerHTML = bestList.map(b => {
+        const diffLabel = b.difficulty ? ' · ' + b.difficulty : '';
+        return `<div class="me-record-item">
+          <span class="me-record-game">${esc(b.gameName)}${diffLabel}</span>
+          <span class="me-record-score">${fmtScore(b.score)}</span>
+        </div>`;
+      }).join('');
+    } else {
+      bestEl.innerHTML = '<div class="me-record-empty">暂无记录</div>';
+    }
+
+  } catch (e) {
+    recentEl.innerHTML = '<div class="me-record-empty">加载失败，请稍后重试</div>';
+    bestEl.innerHTML = '<div class="me-record-empty">加载失败，请稍后重试</div>';
+  }
+}
 
 // === 登录 / 注册 ===
 function switchAuth(tab) {
