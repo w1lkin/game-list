@@ -45,7 +45,7 @@
   .online-banner.hidden { display: none; }
   .online-label { font-size: 13px; color: var(--primary-d); white-space: nowrap; font-weight: 600; }
   .online-avatars { display: flex; gap: 6px; }
-  .online-avatars img { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+  .online-avatars img { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); object-fit: cover; background: #cfd8dc; }
   .online-more { font-size: 12px; color: var(--sub); white-space: nowrap; }
 
   main { padding: 8px 14px; }
@@ -257,7 +257,9 @@ const GAMES = {
   ]
 };
 
-const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' fill='%23cfd8dc'/%3E%3Ccircle cx='40' cy='30' r='15' fill='%23fff'/%3E%3Cpath d='M18 70 a22 22 0 0 1 44 0' fill='%23fff'/%3E%3C/svg%3E";
+// 默认头像：透明 1x1 PNG base64（兼容微信 webview 等不支持 SVG data URI 的环境），
+// 灰色圆形底色由 CSS background 提供，真实头像通过 object-fit:cover 覆盖。
+const DEFAULT_AVATAR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
 let GP = null;
 let currentUser = null;
