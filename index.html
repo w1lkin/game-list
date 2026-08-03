@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>游戏合集 · 一起玩</title>
+  <title>小游戏</title>
 <style>
   :root {
     --primary: #07C160;
@@ -21,17 +21,15 @@
   }
   .topbar {
     position: sticky; top: 0; z-index: 20; display: flex; align-items: center;
-    justify-content: space-between; padding: 14px 16px; background: #fff;
+    justify-content: center; padding: 14px 16px; background: #fff;
     box-shadow: 0 2px 12px rgba(0,0,0,.05);
   }
   .brand { font-weight: 700; font-size: 18px; }
   .brand small { color: var(--sub); font-weight: 400; font-size: 12px; margin-left: 6px; }
-  #userArea { display: flex; align-items: center; gap: 10px; }
   .avatar {
     width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
     background: #cfd8dc; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.12);
   }
-  .nick { font-size: 14px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .btn {
     border: none; border-radius: 8px; padding: 10px 18px; font-size: 15px; font-weight: 600;
     cursor: pointer; background: var(--primary); color: #fff; transition: background .15s, opacity .15s;
@@ -63,13 +61,6 @@
   .card-desc { font-size: 12px; color: var(--sub); line-height: 1.4; min-height: 34px; }
   .card-best { font-size: 12px; color: var(--primary-d); margin-top: 2px; }
   .card-best b { color: var(--text); }
-
-  .fab-share {
-    position: fixed; right: 18px; bottom: 18px; z-index: 20;
-    background: var(--primary); color: #fff; padding: 14px 20px; border-radius: 28px;
-    font-weight: 700; box-shadow: 0 6px 18px rgba(129,199,132,.5); cursor: pointer;
-  }
-  .fab-share:active { opacity: .85; }
 
   .modal {
     position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.45);
@@ -118,25 +109,89 @@
   #toast.show { opacity: 1; }
 
   .section-hint { text-align: center; color: var(--sub); font-size: 12px; margin: 22px 0 4px; }
+
+  /* === 底部 Tab 栏 === */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    display: flex; background: #fff; border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabbar button {
+    flex: 1; border: none; background: none; padding: 10px 0 8px;
+    font-size: 12px; color: var(--sub); cursor: pointer; display: flex;
+    flex-direction: column; align-items: center; gap: 3px; font-family: inherit;
+  }
+  .tabbar button .tab-ico { font-size: 20px; line-height: 1; }
+  .tabbar button.active { color: var(--primary); font-weight: 600; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* === 我的页 === */
+  .me-profile {
+    background: var(--card); border-radius: 16px; padding: 22px 18px;
+    display: flex; align-items: center; gap: 16px; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+  }
+  .me-avatar {
+    width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+    background: #cfd8dc; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.12);
+  }
+  .me-info { flex: 1; min-width: 0; }
+  .me-name { font-size: 18px; font-weight: 700; }
+  .me-sub { font-size: 12px; color: var(--sub); margin-top: 4px; }
+  .me-logged-actions { display: flex; gap: 10px; margin-top: 14px; }
+  .me-logged-actions .btn { flex: 1; }
+  .me-menu {
+    margin-top: 14px; background: var(--card); border-radius: 16px; overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,.04);
+  }
+  .me-menu-item {
+    display: flex; align-items: center; gap: 12px; padding: 16px;
+    border-bottom: 1px solid var(--line); cursor: pointer; font-size: 15px;
+  }
+  .me-menu-item:last-child { border-bottom: none; }
+  .me-menu-item:active { background: #fafafa; }
+  .me-menu-ico { font-size: 20px; }
+  .me-menu-arrow { margin-left: auto; color: #ccc; font-size: 16px; }
 </style>
 </head>
 <body>
 <header class="topbar">
-  <div class="brand">🎮 游戏合集<small>一起玩</small></div>
-  <div id="userArea"></div>
+  <div class="brand">🎮 小游戏<small>一起玩</small></div>
 </header>
 
-<section id="onlineBanner" class="online-banner hidden">
-  <span class="online-label">🟢 在线</span>
-  <div id="onlineAvatars" class="online-avatars"></div>
-  <span id="onlineMore" class="online-more"></span>
+<!-- 游戏页 -->
+<section id="pageGames" class="page active">
+  <section id="onlineBanner" class="online-banner hidden">
+    <span class="online-label">🟢 在线</span>
+    <div id="onlineAvatars" class="online-avatars"></div>
+    <span id="onlineMore" class="online-more"></span>
+  </section>
+  <main id="gameList"></main>
+  <div class="section-hint">登录后跳转游戏自动带上身份 · 成绩进入天梯榜</div>
 </section>
 
-<main id="gameList"></main>
+<!-- 我的页 -->
+<section id="pageMe" class="page">
+  <main>
+    <div class="me-profile" id="meProfile"></div>
+    <div class="me-menu">
+      <div class="me-menu-item" onclick="openShare()">
+        <span class="me-menu-ico">📤</span>分享合集卡片
+        <span class="me-menu-arrow">›</span>
+      </div>
+    </div>
+  </main>
+</section>
 
-<div class="section-hint">登录后跳转游戏自动带上身份 · 成绩进入天梯榜</div>
-
-<div class="fab-share" onclick="openShare()">📤 分享</div>
+<!-- 底部 Tab 栏 -->
+<nav class="tabbar">
+  <button id="tabGames" class="active" onclick="switchTab('games')">
+    <span class="tab-ico">🎮</span>游戏
+  </button>
+  <button id="tabMe" onclick="switchTab('me')">
+    <span class="tab-ico">👤</span>我的
+  </button>
+</nav>
 
 <!-- 登录 / 注册 -->
 <div id="authModal" class="modal hidden">
@@ -333,20 +388,42 @@ async function loadBests() {
   }
 }
 
-// === 登录态渲染 ===
+// === Tab 切换 ===
+function switchTab(tab) {
+  const isGames = tab === 'games';
+  document.getElementById('pageGames').classList.toggle('active', isGames);
+  document.getElementById('pageMe').classList.toggle('active', !isGames);
+  document.getElementById('tabGames').classList.toggle('active', isGames);
+  document.getElementById('tabMe').classList.toggle('active', !isGames);
+}
+
+// === 登录态渲染（个人信息与操作放「我的」页）===
 function onLogin(user) {
   currentUser = user;
-  const area = document.getElementById('userArea');
-  area.innerHTML =
-    `<img class="avatar" src="${user.avatar_url || DEFAULT_AVATAR}" onerror="this.src='${DEFAULT_AVATAR}'">` +
-    `<span class="nick">${esc(user.nickname)}</span>` +
-    `<button class="btn ghost" onclick="openModal('profileModal')">资料</button>` +
-    `<button class="btn ghost" onclick="doLogout()">退出</button>`;
+  const box = document.getElementById('meProfile');
+  box.innerHTML =
+    `<img class="me-avatar" src="${user.avatar_url || DEFAULT_AVATAR}" onerror="this.src='${DEFAULT_AVATAR}'">` +
+    `<div class="me-info">
+       <div class="me-name">${esc(user.nickname)}</div>
+       <div class="me-sub">已登录 · 成绩进入天梯榜</div>
+     </div>` +
+    `<div class="me-logged-actions">
+       <button class="btn ghost" onclick="openModal('profileModal')">编辑资料</button>
+       <button class="btn ghost" onclick="doLogout()">退出登录</button>
+     </div>`;
 }
 function onLogout() {
   currentUser = null;
-  const area = document.getElementById('userArea');
-  area.innerHTML = `<button class="btn" onclick="openModal('authModal')">登录 / 注册</button>`;
+  const box = document.getElementById('meProfile');
+  box.innerHTML =
+    `<img class="me-avatar" src="${DEFAULT_AVATAR}">` +
+    `<div class="me-info">
+       <div class="me-name">未登录</div>
+       <div class="me-sub">登录后畅玩全部小游戏，成绩进入天梯榜</div>
+     </div>` +
+    `<div class="me-logged-actions">
+       <button class="btn" onclick="openModal('authModal')">登录 / 注册</button>
+     </div>`;
 }
 function doLogout() { GP.logout(); onLogout(); toast('已退出'); }
 
