@@ -2,360 +2,438 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>游戏合集 · 分享卡片</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>游戏合集 · 一起玩</title>
 <style>
+  :root {
+    --primary: #07C160;
+    --primary-d: #06A850;
+    --bg: #f3f6f4;
+    --card: #ffffff;
+    --text: #2e3a33;
+    --sub: #8a9790;
+    --line: #eef1ee;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
-    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-    text-align: center; padding: 40px 16px;
-    background: #f0f0f0;
+    margin: 0; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); padding-bottom: 90px;
   }
-  canvas { border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.12); max-width: 90vw; }
-  .btn-row { margin-top: 20px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  button {
-    padding: 14px 40px; font-size: 17px;
-    background: #81C784; color: #fff; border: none; border-radius: 14px;
-    cursor: pointer; font-weight: 600; transition: opacity 0.2s;
+  .topbar {
+    position: sticky; top: 0; z-index: 20; display: flex; align-items: center;
+    justify-content: space-between; padding: 14px 16px; background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,.05);
   }
-  button:hover { opacity: 0.85; }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  button.secondary { background: transparent; border: 1.5px solid #81C784; color: #81C784; }
-  p { color: #888; margin-top: 12px; font-size: 14px; }
+  .brand { font-weight: 700; font-size: 18px; }
+  .brand small { color: var(--sub); font-weight: 400; font-size: 12px; margin-left: 6px; }
+  #userArea { display: flex; align-items: center; gap: 10px; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+    background: #cfd8dc; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  }
+  .nick { font-size: 14px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .btn {
+    border: none; border-radius: 8px; padding: 10px 18px; font-size: 15px; font-weight: 600;
+    cursor: pointer; background: var(--primary); color: #fff; transition: background .15s, opacity .15s;
+  }
+  .btn:active { background: var(--primary-d); opacity: .9; }
+  .btn.ghost { background: #f2f2f2; color: #555; border: none; }
+  .btn[disabled] { opacity: .5; }
+
+  .online-banner {
+    display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+    background: linear-gradient(90deg, #e8f5e9, #f1f8e9); overflow-x: auto;
+  }
+  .online-banner.hidden { display: none; }
+  .online-label { font-size: 13px; color: var(--primary-d); white-space: nowrap; font-weight: 600; }
+  .online-avatars { display: flex; gap: 6px; }
+  .online-avatars img { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+  .online-more { font-size: 12px; color: var(--sub); white-space: nowrap; }
+
+  main { padding: 8px 14px; }
+  .cat-title { font-size: 15px; font-weight: 700; margin: 18px 4px 10px; color: var(--text); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card {
+    background: var(--card); border-radius: 16px; padding: 14px; cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,.04); transition: transform .12s, box-shadow .12s;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .card:active { transform: scale(.98); box-shadow: 0 1px 6px rgba(0,0,0,.08); }
+  .card-name { font-size: 16px; font-weight: 700; }
+  .card-desc { font-size: 12px; color: var(--sub); line-height: 1.4; min-height: 34px; }
+  .card-best { font-size: 12px; color: var(--primary-d); margin-top: 2px; }
+  .card-best b { color: var(--text); }
+
+  .fab-share {
+    position: fixed; right: 18px; bottom: 18px; z-index: 20;
+    background: var(--primary); color: #fff; padding: 14px 20px; border-radius: 28px;
+    font-weight: 700; box-shadow: 0 6px 18px rgba(129,199,132,.5); cursor: pointer;
+  }
+  .fab-share:active { opacity: .85; }
+
+  .modal {
+    position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.45);
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .modal.hidden { display: none; }
+  .sheet {
+    background: #fff; width: 100%; max-width: 460px; border-radius: 20px 20px 0 0;
+    padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); animation: up .2s ease;
+  }
+  @keyframes up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .sheet-head { text-align: center; padding: 6px 0 10px; }
+  .wx-badge {
+    width: 54px; height: 54px; border-radius: 14px; background: var(--primary);
+    margin: 0 auto 8px; display: flex; align-items: center; justify-content: center;
+  }
+  .wx-badge svg { width: 30px; height: 30px; }
+  .sheet-head p { margin: 0; font-size: 14px; color: var(--sub); }
+  .sheet-tabs { display: flex; gap: 28px; margin: 4px 4px 18px; }
+  .sheet-tabs button {
+    flex: none; padding: 8px 2px; border: none; background: none;
+    font-size: 17px; font-weight: 600; color: #999; cursor: pointer; position: relative;
+  }
+  .sheet-tabs button.active { color: var(--primary); }
+  .sheet-tabs button.active::after {
+    content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+    bottom: -6px; width: 22px; height: 3px; border-radius: 2px; background: var(--primary);
+  }
+  .sheet input[type=text], .sheet input[type=password] {
+    width: 100%; padding: 13px 14px; margin-bottom: 12px; border: 1px solid #e3e3e3;
+    border-radius: 8px; font-size: 15px; outline: none; background: #f7f7f7;
+  }
+  .sheet input:focus { border-color: var(--primary); background: #fff; }
+  .avatar-pick {
+    display: block; font-size: 13px; color: var(--sub); margin-bottom: 12px;
+  }
+  .avatar-pick input { margin-top: 6px; font-size: 13px; }
+  .msg { color: #fa5151; font-size: 13px; min-height: 18px; margin-bottom: 8px; }
+  .sheet .btn { width: 100%; margin-top: 4px; padding: 13px; font-size: 17px; border-radius: 8px; }
+
+  #toast {
+    position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%);
+    background: rgba(0,0,0,.8); color: #fff; padding: 10px 18px; border-radius: 20px;
+    font-size: 14px; z-index: 99; opacity: 0; transition: opacity .25s; pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+
+  .section-hint { text-align: center; color: var(--sub); font-size: 12px; margin: 22px 0 4px; }
 </style>
 </head>
 <body>
-<h2 style="color:#555;">🎮 游戏合集 · 分享卡片</h2>
-<canvas id="c"></canvas>
-<p id="status-text">正在加载二维码…</p>
-<div class="btn-row">
-  <button id="dl-btn" onclick="downloadPNG()" disabled>📥 下载 PNG</button>
-  <button class="secondary" onclick="copyImage()" disabled>📋 复制图片</button>
+<header class="topbar">
+  <div class="brand">🎮 游戏合集<small>一起玩</small></div>
+  <div id="userArea"></div>
+</header>
+
+<section id="onlineBanner" class="online-banner hidden">
+  <span class="online-label">🟢 在线</span>
+  <div id="onlineAvatars" class="online-avatars"></div>
+  <span id="onlineMore" class="online-more"></span>
+</section>
+
+<main id="gameList"></main>
+
+<div class="section-hint">登录后跳转游戏自动带上身份 · 成绩进入天梯榜</div>
+
+<div class="fab-share" onclick="openShare()">📤 分享</div>
+
+<!-- 登录 / 注册 -->
+<div id="authModal" class="modal hidden">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div class="wx-badge">
+        <svg viewBox="0 0 24 24" fill="#fff"><path d="M9 3C4.9 3 1.5 5.9 1.5 9.4c0 2 1.1 3.8 2.9 5L3.4 17l2.4-1.2c.9.3 1.9.4 2.9.4h.6a5.6 5.6 0 0 1-.2-1.5C9.1 11.1 12.6 8.4 16.9 8.4h.6C16.7 5.3 13.2 3 9 3Zm-2.4 4.2a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm4.8 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/><path d="M22.5 14.1c0-2.8-2.8-5.1-6.2-5.1s-6.2 2.3-6.2 5.1 2.8 5.1 6.2 5.1c.7 0 1.4-.1 2.1-.3l1.9 1-.5-1.6c1.5-.9 2.7-2.3 2.7-3.9Zm-8.2-.9a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Zm3.9 0a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Z"/></svg>
+      </div>
+      <p>登录后畅玩全部游戏</p>
+    </div>
+    <div class="sheet-tabs">
+      <button data-tab="login" class="active" onclick="switchAuth('login')">登录</button>
+      <button data-tab="register" onclick="switchAuth('register')">注册</button>
+    </div>
+    <input id="authNick" type="text" placeholder="昵称" maxlength="20" autocomplete="username">
+    <input id="authPw" type="password" placeholder="密码（≥6位）" autocomplete="current-password">
+    <label class="avatar-pick">头像（选填，≤2MB，支持 jpg/png/webp/gif）
+      <input id="authAvatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+    </label>
+    <div id="authMsg" class="msg"></div>
+    <button class="btn" onclick="submitAuth()">登录</button>
+    <button class="btn ghost" style="margin-top:10px" onclick="closeModal('authModal')">取消</button>
+  </div>
 </div>
+
+<!-- 改资料 -->
+<div id="profileModal" class="modal hidden">
+  <div class="sheet">
+    <div class="sheet-tabs"><button class="active">我的资料</button></div>
+    <input id="pfNick" type="text" placeholder="新昵称（留空不改）" maxlength="20">
+    <input id="pfPw" type="password" placeholder="新密码（≥6位，留空不改）">
+    <label class="avatar-pick">更换头像（≤2MB）
+      <input id="pfAvatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+    </label>
+    <div id="pfMsg" class="msg"></div>
+    <button class="btn" onclick="submitProfile()">保存</button>
+    <button class="btn ghost" style="margin-top:10px" onclick="closeModal('profileModal')">取消</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
 <script>
-// === 游戏列表配置 ===
+// === 游戏配置（带 game_id 用于拉取天梯；lunch 为娱乐向不计入天梯）===
 const GAMES = {
   categories: [
-    {
-      emoji: '🎭',
-      name: '模拟体验',
-      games: [
-        { name: '人生重开模拟器', desc: '异世界转生，选择种族天赋经历人生抉择', url: 'https://life-restart-simulator-a7b.pages.dev/' },
-        { name: '替马斯克花钱',     desc: '消费模拟器，挥霍巨额财富购买各类商品',   url: 'https://spend-money-for-musk.pages.dev/' },
-      ],
-    },
-    {
-      emoji: '🧩',
-      name: '休闲娱乐',
-      games: [
-        { name: '翻牌消消乐', desc: '日系清新记忆配对，三种难度计时挑战', url: 'https://flop-39t.pages.dev/' },
-        { name: '贪吃蛇',     desc: '经典贪吃蛇，键触双控高分排行',       url: 'https://greedy-snake-3wq.pages.dev/' },
-        { name: '扫雷',       desc: '经典扫雷三档难度，支持触屏长按插旗',   url: 'https://mine-sweeper-2f1.pages.dev/' },
-        { name: '中午吃什么',   desc: '老虎机滚动抽选，治愈你的选择困难症',  url: 'https://lunch-1t7.pages.dev/' },
-      ],
-    },
-    {
-      emoji: '🔮',
-      name: '玄学趣玩',
-      games: [
-        { name: '掷筊问卜', desc: '闽南掷筊文化塔罗占卜，圣杯笑杯阴杯判定', url: 'https://holy-grail-b8u.pages.dev/' },
-      ],
-    },
-    {
-      emoji: '🧪',
-      name: '脑力挑战',
-      games: [
-        { name: '人类基准', desc: '7项认知测试，反应速度记忆瞄准全方位挑战', url: 'https://human-bench.pages.dev/' },
-      ],
-    },
-  ],
-  totalGames: 0, // 由下方自动计算
-  slogan: '',     // 由下方自动计算
+    { emoji: '🎭', name: '模拟体验', games: [
+      { id: 'life-restart-simulator', name: '人生重开模拟器', desc: '异世界转生，选择种族天赋经历人生抉择', url: 'https://life-restart-simulator.w1lkin.site/' },
+      { id: 'spend-money-for-musk', name: '替马斯克花钱', desc: '消费模拟器，挥霍巨额财富购买各类商品', url: 'https://spend-money-for-musk.w1lkin.site/' },
+    ]},
+    { emoji: '🧩', name: '休闲娱乐', games: [
+      { id: 'flop', name: '翻牌消消乐', desc: '日系清新记忆配对，三种难度计时挑战', url: 'https://flop.w1lkin.site/' },
+      { id: 'greedy-snake', name: '贪吃蛇', desc: '经典贪吃蛇，键触双控高分排行', url: 'https://greedy-snake.w1lkin.site/' },
+      { id: 'mine-sweeper', name: '扫雷', desc: '经典扫雷三档难度，支持触屏长按插旗', url: 'https://mine-sweeper.w1lkin.site/' },
+      { id: 'lunch', name: '中午吃什么', desc: '老虎机滚动抽选，治愈你的选择困难症', url: 'https://lunch.w1lkin.site/', skip: true },
+    ]},
+    { emoji: '🔮', name: '玄学趣玩', games: [
+      { id: 'holy-grail', name: '掷筊问卜', desc: '闽南掷筊文化塔罗占卜，圣杯笑杯阴杯判定', url: 'https://holy-grail.w1lkin.site/' },
+    ]},
+    { emoji: '🧪', name: '脑力挑战', games: [
+      { id: 'human-bench', name: '人类基准', desc: '7项认知测试，反应速度记忆瞄准全方位挑战', url: 'https://human-bench.w1lkin.site/' },
+    ]},
+  ]
 };
 
-// === 自动统计 ===
-const launchedGames = [];
-GAMES.categories.forEach((cat) => {
-  cat.games.forEach((game) => {
-    if (game.url) launchedGames.push(game);
-  });
-});
-GAMES.totalGames = launchedGames.length;
-GAMES.slogan = '共 ' + launchedGames.length + ' 款游戏 · AI 驱动开发 · 持续更新中';
+const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' fill='%23cfd8dc'/%3E%3Ccircle cx='40' cy='30' r='15' fill='%23fff'/%3E%3Cpath d='M18 70 a22 22 0 0 1 44 0' fill='%23fff'/%3E%3C/svg%3E";
 
-// === 画布设置（高度根据游戏数量自适应） ===
-const W = 1200;
-const CARD_X = 70;
-const CARD_TOP = 310;
-const CARD_PADDING_TOP = 60;
-const CAT_HEADER_H = 90;    // 分类标题 + 下划线
-const GAME_ITEM_H = 151;    // 单个游戏条目高度（135 + 16 gap）
-const CAT_GAP = 24;         // 分类之间的间距
-const CARD_PADDING_BOTTOM = 30;
-const BOTTOM_AREA = 120;    // 底部标语 + 装饰空间
+let GP = null;
+let currentUser = null;
+let authTab = 'login';
 
-const totalGames = GAMES.categories.reduce((s, c) => s + c.games.length, 0);
-const numCats = GAMES.categories.length;
-const cardH = CARD_PADDING_TOP + numCats * CAT_HEADER_H + totalGames * GAME_ITEM_H + (numCats - 1) * CAT_GAP + CARD_PADDING_BOTTOM;
-const H = CARD_TOP + cardH + BOTTOM_AREA;
-const cardW = W - CARD_X * 2;
-
-const canvas = document.getElementById("c");
-canvas.width = W; canvas.height = H;
-const ctx = canvas.getContext("2d");
-
-// === 日系清新主题色 ===
-const PRIMARY = '#81C784';
-const PRIMARY_LIGHT = '#A5D6A7';
-const CARD_BG = '#FFFFFF';
-const TEXT_TITLE = '#333';
-const TEXT_SUB = '#888';
-const TEXT_HINT = '#aaa';
-const DIVIDER_COLOR = '#C8E6C9';
-
-// === 工具：圆角矩形 ===
-function rr(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
-  ctx.arcTo(x + w, y, x + w, y + r, r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-  ctx.lineTo(x + r, y + h);
-  ctx.arcTo(x, y + h, x, y + h - r, r);
-  ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
-  ctx.closePath();
-}
-
-// === 工具：文字居中 ===
-function textCenter(text, y, font, color) {
-  ctx.textAlign = 'center';
-  ctx.fillStyle = color;
-  ctx.font = font;
-  ctx.fillText(text, W / 2, y);
-}
-
-// === 收集所有游戏卡片位置（用于点击跳转） ===
-const gameCards = []; // { x, y, w, h, url }
-const allGames = [];
-GAMES.categories.forEach((cat) => {
-  cat.games.forEach((game) => {
-    if (game.url) allGames.push(game);
-  });
-});
-
-// === 第一步：绘制不需要二维码的部分 ===
-(function drawBase() {
-  // --- 背景渐变色 ---
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-  bgGrad.addColorStop(0, '#E8F5E9');
-  bgGrad.addColorStop(0.35, '#FFF9C4');
-  bgGrad.addColorStop(1, '#FFFDE7');
-  ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, W, H);
-
-  // --- 装饰圆圈 ---
-  ctx.globalAlpha = 0.10;
-  [
-    { x: 160, y: 340, r: 200, c: PRIMARY },
-    { x: 980, y: 260, r: 140, c: PRIMARY_LIGHT },
-    { x: 1060, y: 1150, r: 240, c: '#FFE082' },
-    { x: 180, y: 1280, r: 130, c: PRIMARY },
-    { x: 600, y: 180, r: 90,  c: PRIMARY_LIGHT },
-  ].forEach(d => {
-    ctx.fillStyle = d.c;
-    ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2); ctx.fill();
-  });
-  ctx.globalAlpha = 1;
-
-  // --- 内容卡片 ---
-  ctx.fillStyle = CARD_BG;
-  ctx.shadowColor = 'rgba(0,0,0,0.06)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 10;
-  rr(ctx, CARD_X, CARD_TOP, cardW, cardH, 48); ctx.fill();
-  ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-
-  // --- 标题 ---
-  textCenter('🎮  游 戏 合 集', 180, "bold 76px -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif", PRIMARY);
-
-  // --- 副标题 ---
-  textCenter('用 AI 打造的趣味小游戏', 260, "34px -apple-system, 'PingFang SC', sans-serif", TEXT_SUB);
-
-  // --- 顶部装饰虚线 ---
-  ctx.strokeStyle = PRIMARY_LIGHT; ctx.lineWidth = 3;
-  ctx.setLineDash([14, 10]);
-  ctx.beginPath(); ctx.moveTo(280, 300); ctx.lineTo(W - 280, 300); ctx.stroke();
-  ctx.setLineDash([]);
-
-  // --- 分类和游戏 ---
-  let curY = CARD_TOP + CARD_PADDING_TOP;
-
-  GAMES.categories.forEach((cat, ci) => {
-    // 分类标题
-    ctx.textAlign = 'left';
-    ctx.fillStyle = PRIMARY;
-    ctx.font = "600 42px -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif";
-    ctx.fillText(cat.emoji + '  ' + cat.name, CARD_X + 50, curY + 42);
-
-    // 标题下划线
-    ctx.strokeStyle = DIVIDER_COLOR; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(CARD_X + 50, curY + 60);
-    ctx.lineTo(CARD_X + cardW - 50, curY + 60);
-    ctx.stroke();
-
-    curY += 90;
-
-    // 游戏列表
-    cat.games.forEach((game, gi) => {
-      const gx = CARD_X + 40, gy = curY, gw = cardW - 80, gh = 135;
-
-      // 游戏条目背景卡片
-      ctx.fillStyle = '#FAFAFA';
-      rr(ctx, gx, gy, gw, gh, 14); ctx.fill();
-      ctx.strokeStyle = '#EEEEEE'; ctx.lineWidth = 1;
-      rr(ctx, gx, gy, gw, gh, 14); ctx.stroke();
-
-      // 游戏序号
-      const gameIdx = GAMES.categories.slice(0, ci).reduce((s, c) => s + c.games.length, 0) + gi + 1;
-      ctx.fillStyle = '#fff';
-      ctx.strokeStyle = PRIMARY; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(gx + 36, gy + gh / 2, 20, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = PRIMARY;
-      ctx.font = "bold 20px -apple-system, 'PingFang SC', sans-serif";
-      ctx.textAlign = 'center';
-      ctx.fillText(gameIdx.toString(), gx + 36, gy + gh / 2 + 7);
-
-      // 游戏名称
-      ctx.textAlign = 'left';
-      ctx.fillStyle = TEXT_TITLE;
-      ctx.font = "600 32px -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif";
-      ctx.fillText(game.name, gx + 72, gy + 44);
-
-      // 游戏描述
-      ctx.fillStyle = TEXT_SUB;
-      ctx.font = "24px -apple-system, 'PingFang SC', sans-serif";
-      ctx.fillText(game.desc, gx + 72, gy + 80);
-
-      // 二维码占位框（稍后图片覆盖）/ 未上线标记
-      const qrSize = 100;
-      const qrX = gx + gw - 36 - qrSize;
-      const qrY = gy + (gh - qrSize) / 2;
-
-      if (game.url) {
-        ctx.fillStyle = '#fff';
-        ctx.strokeStyle = PRIMARY_LIGHT; ctx.lineWidth = 2;
-        rr(ctx, qrX - 4, qrY - 4, qrSize + 8, qrSize + 8, 12); ctx.fill(); ctx.stroke();
-        // 存下 QR 坐标，供异步加载后绘制
-        game._qrX = qrX;
-        game._qrY = qrY;
-        game._qrSize = qrSize;
-      } else {
-        // 未上线游戏显示「即将上线」标签
-        ctx.fillStyle = '#FFF3E0';
-        ctx.strokeStyle = '#FFB74D'; ctx.lineWidth = 2;
-        rr(ctx, qrX - 4, qrY - 4, qrSize + 8, qrSize + 8, 12); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#E65100';
-        ctx.font = "bold 16px -apple-system, 'PingFang SC', sans-serif";
-        ctx.textAlign = 'center';
-        ctx.fillText('即将上线', qrX + qrSize / 2, qrY + qrSize / 2 + 6);
-      }
-
-      curY += gh + 16;
-
-      // 记录卡片位置，用于点击跳转
-      if (game.url) gameCards.push({ x: gx, y: gy, w: gw, h: gh, url: game.url });
-    });
-
-    curY += 24;
-  });
-
-  // --- 底部标语 ---
-  textCenter(GAMES.slogan, H - 72, "italic 28px -apple-system, 'PingFang SC', sans-serif", TEXT_HINT);
-
-  // 底部装饰虚线
-  ctx.strokeStyle = PRIMARY_LIGHT; ctx.lineWidth = 2;
-  ctx.setLineDash([10, 8]);
-  ctx.beginPath(); ctx.moveTo(300, H - 48); ctx.lineTo(W - 300, H - 48); ctx.stroke();
-  ctx.setLineDash([]);
+// === 动态加载 SDK（支持 ?api= 覆盖，本地 wrangler dev 联调用 ?api=http://localhost:8787）===
+(function loadSDK() {
+  const API_BASE = new URLSearchParams(location.search).get('api') || 'https://api.w1lkin.site';
+  window.__GP_API_BASE__ = API_BASE;
+  const s = document.createElement('script');
+  s.src = API_BASE + '/sdk.js';
+  s.onload = boot;
+  s.onerror = () => toast('平台 SDK 加载失败，请检查网络或 ?api= 参数');
+  document.head.appendChild(s);
 })();
 
-// === 点击游戏卡片跳转 ===
-{
-  function getCanvasScale() {
-    const rect = canvas.getBoundingClientRect();
-    return { scaleX: W / rect.width, scaleY: H / rect.height, left: rect.left, top: rect.top };
+function boot() {
+  GP = window.GamePlatform;
+  GP.init();
+  renderGames();
+  if (GP.getToken()) {
+    GP.getUser().then(u => u ? onLogin(u) : onLogout()).catch(onLogout);
+  } else {
+    onLogout();
+    // 从游戏跳过来登录：自动弹出登录框
+    if (new URLSearchParams(location.search).get('redirect')) openModal('authModal');
   }
-
-  function hitTest(e) {
-    const { scaleX, scaleY, left, top } = getCanvasScale();
-    const cx = (e.clientX - left) * scaleX;
-    const cy = (e.clientY - top) * scaleY;
-    return gameCards.find(c => cx >= c.x && cx <= c.x + c.w && cy >= c.y && cy <= c.y + c.h) || null;
-  }
-
-  canvas.addEventListener('click', function(e) {
-    const hit = hitTest(e);
-    if (hit && hit.url) window.open(hit.url, '_blank');
-  });
-
-  canvas.addEventListener('mousemove', function(e) {
-    canvas.style.cursor = hitTest(e) ? 'pointer' : 'default';
-  });
+  loadOnline();
+  setInterval(loadOnline, 15000);
+  loadBests();
 }
 
-// === 第二步：加载所有二维码并绘制 ===
-const QS = 100;
-const QR_API = 'https://api.qrserver.com/v1/create-qr-code/?size=' + QS + 'x' + QS + '&margin=4&data=';
-
-let qrLoadedCount = 0;
-
-allGames.forEach((game) => {
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.onload = function() {
-    ctx.drawImage(img, game._qrX, game._qrY, game._qrSize, game._qrSize);
-    qrLoadedCount++;
-    checkAllLoaded();
-  };
-  img.onerror = function() {
-    // 二维码加载失败时绘制文字提示
-    ctx.fillStyle = TEXT_HINT;
-    ctx.font = "14px -apple-system, 'PingFang SC', sans-serif";
-    ctx.textAlign = 'center';
-    ctx.fillText('扫码访问', game._qrX + game._qrSize / 2, game._qrY + game._qrSize / 2 + 5);
-    qrLoadedCount++;
-    checkAllLoaded();
-  };
-  img.src = QR_API + encodeURIComponent(game.url);
-});
-
-function checkAllLoaded() {
-  if (qrLoadedCount >= allGames.length) {
-    document.getElementById('dl-btn').disabled = false;
-    document.querySelector('button.secondary').disabled = false;
-    document.getElementById('status-text').textContent = '点击下方按钮下载 PNG，发到微信群或上传为 og:image';
-  }
+// === 工具 ===
+function val(id) { return document.getElementById(id).value; }
+function esc(s) { return String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])); }
+function fmtScore(s) {
+  if (typeof s !== 'number' || Number.isNaN(s)) return s;
+  return Number.isInteger(s) ? String(s) : s.toFixed(1);
 }
-
-// === 下载 PNG ===
-function downloadPNG() {
-  const a = document.createElement('a');
-  a.download = 'game-collection-share-card.png';
-  a.href = canvas.toDataURL('image/png');
-  a.click();
+function mapErr(m) {
+  return ({
+    nickname_taken: '昵称已被占用', invalid_credentials: '昵称或密码错误',
+    password_too_short: '密码至少6位', bad_type: '头像类型不支持',
+    too_large: '头像超过2MB', no_file: '未选择头像文件',
+    missing_fields: '请填写完整', unauthorized: '请先登录',
+  })[m] || ('出错了：' + m);
 }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2000);
+}
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 
-// === 复制到剪贴板 ===
-function copyImage() {
-  const btn = document.querySelector('button.secondary');
-  canvas.toBlob(function(blob) {
-    const item = new ClipboardItem({ 'image/png': blob });
-    navigator.clipboard.write([item]).then(() => {
-      const orig = btn.textContent;
-      btn.textContent = '✅ 已复制';
-      setTimeout(() => { btn.textContent = orig; }, 1500);
-    }).catch(() => {
-      alert('复制失败，请使用下载按钮');
+// === 渲染游戏列表 ===
+function renderGames() {
+  const root = document.getElementById('gameList');
+  root.innerHTML = '';
+  GAMES.categories.forEach(cat => {
+    const h = document.createElement('div');
+    h.className = 'cat-title'; h.textContent = cat.emoji + ' ' + cat.name;
+    root.appendChild(h);
+    const grid = document.createElement('div'); grid.className = 'grid';
+    cat.games.forEach(g => {
+      const card = document.createElement('div');
+      card.className = 'card'; card.onclick = () => openGame(g);
+      card.innerHTML =
+        `<div class="card-name">${esc(g.name)}</div>` +
+        `<div class="card-desc">${esc(g.desc)}</div>` +
+        `<div class="card-best" id="best-${g.id}">${g.skip ? '🎲 娱乐向 · 不计入天梯' : '👑 加载最强者…'}</div>`;
+      grid.appendChild(card);
     });
+    root.appendChild(grid);
   });
 }
+
+// === 跳转游戏（带 token 实现 SSO）===
+function openGame(g) {
+  const u = new URL(g.url);
+  const token = GP.getToken();
+  if (token) u.searchParams.set('token', token);
+  window.open(u.toString(), '_blank');
+}
+
+function openShare() {
+  const token = GP.getToken();
+  window.open('share-card.html' + (token ? ('?token=' + encodeURIComponent(token)) : ''), '_blank');
+}
+
+// === 在线横幅（全局在线，公开接口）===
+async function loadOnline() {
+  try {
+    const items = await GP.getOnlineGlobal();
+    const banner = document.getElementById('onlineBanner');
+    const box = document.getElementById('onlineAvatars');
+    const more = document.getElementById('onlineMore');
+    if (!items || !items.length) { banner.classList.add('hidden'); return; }
+    banner.classList.remove('hidden');
+    box.innerHTML = '';
+    items.slice(0, 12).forEach(p => {
+      const img = document.createElement('img');
+      img.src = p.avatar || DEFAULT_AVATAR;
+      img.title = p.nickname || '玩家';
+      img.onerror = () => { img.src = DEFAULT_AVATAR; };
+      box.appendChild(img);
+    });
+    more.textContent = items.length > 12 ? ('+' + (items.length - 12)) : '';
+  } catch (e) { /* 静默 */ }
+}
+
+// === 最强者（各游戏榜首，公开接口）===
+async function loadBests() {
+  for (const cat of GAMES.categories) {
+    for (const g of cat.games) {
+      if (g.skip) continue;
+      const el = document.getElementById('best-' + g.id);
+      try {
+        const items = await GP.getLeaderboard(g.id, 1);
+        if (el && items && items[0]) {
+          const top = items[0];
+          el.innerHTML = `👑 最强者：<b>${esc(top.nickname)}</b> · ${fmtScore(top.score)}`;
+        } else if (el) {
+          el.textContent = '👑 暂无记录';
+        }
+      } catch (e) { if (el) el.textContent = '👑 加载失败'; }
+    }
+  }
+}
+
+// === 登录态渲染 ===
+function onLogin(user) {
+  currentUser = user;
+  const area = document.getElementById('userArea');
+  area.innerHTML =
+    `<img class="avatar" src="${user.avatar_url || DEFAULT_AVATAR}" onerror="this.src='${DEFAULT_AVATAR}'">` +
+    `<span class="nick">${esc(user.nickname)}</span>` +
+    `<button class="btn ghost" onclick="openModal('profileModal')">资料</button>` +
+    `<button class="btn ghost" onclick="doLogout()">退出</button>`;
+}
+function onLogout() {
+  currentUser = null;
+  const area = document.getElementById('userArea');
+  area.innerHTML = `<button class="btn" onclick="openModal('authModal')">登录 / 注册</button>`;
+}
+function doLogout() { GP.logout(); onLogout(); toast('已退出'); }
+
+// === 登录 / 注册 ===
+function switchAuth(tab) {
+  authTab = tab;
+  document.querySelectorAll('#authModal .sheet-tabs button').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  document.getElementById('authMsg').textContent = '';
+  document.getElementById('authModal').querySelector('.btn:not(.ghost)').textContent = (tab === 'register' ? '注册' : '登录');
+}
+async function submitAuth() {
+  const nick = val('authNick').trim();
+  const pw = val('authPw');
+  const file = document.getElementById('authAvatar').files[0];
+  const msg = document.getElementById('authMsg');
+  msg.textContent = '';
+  if (!nick || !pw) { msg.textContent = '请填写昵称和密码'; return; }
+  if (authTab === 'register' && pw.length < 6) { msg.textContent = '密码至少6位'; return; }
+  if (file) {
+    if (file.size > 2 * 1024 * 1024) { msg.textContent = '头像超过2MB'; return; }
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) { msg.textContent = '头像类型不支持'; return; }
+  }
+  try {
+    let user;
+    if (authTab === 'register') user = await GP.register(nick, pw);
+    else user = await GP.login(nick, pw);
+    if (authTab === 'register' && file) {
+      try {
+        const url = await GP.uploadAvatar(file);
+        user = await GP.updateProfile({ avatar_url: url });
+      } catch (e) {
+        // 头像失败不影响账号；额度满时给出提示
+        if (e.message === 'quota_exceeded') msg.textContent = '本月头像上传额度已满，已为你完成注册，可稍后再试';
+      }
+    }
+    onLogin(user);
+    // 登录后带回游戏（自动带上 token 实现 SSO）
+    const redirect = new URLSearchParams(location.search).get('redirect');
+    if (redirect) {
+      try {
+        const u = new URL(redirect);
+        u.searchParams.set('token', GP.getToken());
+        u.searchParams.set('api', GP.API_BASE);
+        location.replace(u.toString());
+        return;
+      } catch (e) {}
+    }
+    closeModal('authModal');
+    toast(authTab === 'register' ? '注册成功 🎉' : '登录成功');
+    loadOnline();
+  } catch (e) { msg.textContent = mapErr(e.message); }
+}
+
+// === 改资料 ===
+async function submitProfile() {
+  const nick = val('pfNick').trim();
+  const pw = val('pfPw');
+  const file = document.getElementById('pfAvatar').files[0];
+  const msg = document.getElementById('pfMsg');
+  msg.textContent = '';
+  const patch = {};
+  if (nick) patch.nickname = nick;
+  if (pw) {
+    if (pw.length < 6) { msg.textContent = '密码至少6位'; return; }
+    patch.password = pw;
+  }
+  try {
+    let user = currentUser;
+    if (Object.keys(patch).length) user = await GP.updateProfile(patch);
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { msg.textContent = '头像超过2MB'; return; }
+      if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) { msg.textContent = '头像类型不支持'; return; }
+      const url = await GP.uploadAvatar(file);
+      user = await GP.updateProfile({ avatar_url: url });
+    }
+    onLogin(user);
+    closeModal('profileModal');
+    toast('资料已更新');
+  } catch (e) { msg.textContent = mapErr(e.message); }
+}
+
+// 点击遮罩关闭
+document.querySelectorAll('.modal').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.add('hidden'); });
+});
 </script>
 </body>
 </html>
