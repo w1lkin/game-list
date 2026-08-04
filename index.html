@@ -148,6 +148,15 @@
   .me-record-score { color: var(--primary-d); font-weight: 700; white-space: nowrap; }
   .me-record-time { font-size: 11px; color: var(--sub); white-space: nowrap; }
   .me-record-empty { text-align: center; color: var(--sub); font-size: 13px; padding: 12px 0; }
+  .me-record-more {
+    text-align: center; padding: 8px 0 0;
+  }
+  .me-record-more button {
+    border: none; background: var(--card); color: var(--primary-d); font-size: 13px;
+    padding: 8px 20px; border-radius: 8px; cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,.03);
+  }
+  .me-record-more button:active { opacity: .8; }
   .me-menu {
     margin-top: 14px; background: var(--card); border-radius: 16px; overflow: hidden;
     box-shadow: 0 2px 10px rgba(0,0,0,.04);
@@ -484,13 +493,15 @@ function onLogout() {
 function doLogout() { GP.logout(); onLogout(); toast('已退出'); }
 
 // === 加载个人游戏记录 ===
+// 缓存拉取的全量数据，用于「加载更多」展开
+let _myRecordsCache = null;
+
 async function loadMyRecords() {
   const recentEl = document.getElementById('meRecentScores');
   const bestEl = document.getElementById('meBestScores');
   recentEl.innerHTML = '<div class="me-record-empty">加载中…</div>';
   bestEl.innerHTML = '<div class="me-record-empty">加载中…</div>';
 
-  // 收集所有非 skip 的游戏
   const allGames = [];
   GAMES.categories.forEach(cat => {
     cat.games.forEach(g => {
@@ -499,7 +510,6 @@ async function loadMyRecords() {
   });
 
   try {
-    // 并行拉取所有游戏的个人成绩
     const results = await Promise.all(
       allGames.map(async (g) => {
         const items = await GP.getMyScores(g.id, 20);
@@ -507,7 +517,7 @@ async function loadMyRecords() {
       })
     );
 
-    // --- 近期记录：按时间倒序，取最近 10 条 ---
+    // --- 近期记录：按时间倒序 ---
     let recentAll = [];
     results.forEach(({ game, items }) => {
       items.forEach(it => {
@@ -521,42 +531,16 @@ async function loadMyRecords() {
       });
     });
     recentAll.sort((a, b) => b.created_at - a.created_at);
-    const recent10 = recentAll.slice(0, 10);
-
-    if (recent10.length) {
-      recentEl.innerHTML = recent10.map(r => {
-        let diffLabel = '';
-        let diffKey = null;
-        try {
-          const m = typeof r.meta === 'string' ? JSON.parse(r.meta) : (r.meta || {});
-          if (m.difficulty) {
-            const dm = { easy: '简', medium: '中', hard: '难' };
-            diffLabel = ' · ' + (dm[m.difficulty] || m.difficulty);
-            diffKey = m.difficulty;
-          }
-        } catch (e) {}
-        const time = new Date(r.created_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        return `<div class="me-record-item">
-          <span class="me-record-game">${esc(r.gameName)}${diffLabel}</span>
-          <span class="me-record-score">${fmtLeaderScore(r.gameId, diffKey, r.score)}</span>
-          <span class="me-record-time">${time}</span>
-        </div>`;
-      }).join('');
-    } else {
-      recentEl.innerHTML = '<div class="me-record-empty">暂无游戏记录，快去玩一局吧</div>';
-    }
 
     // --- 个人最强记录：每个游戏取最高分 ---
     let bestList = [];
     results.forEach(({ game, items }) => {
       if (!items.length) return;
-      // 无难度区分的游戏：取最高分
       if (!game.diffs || !game.diffs.length) {
         let best = items[0];
         items.forEach(it => { if (it.score > best.score) best = it; });
         bestList.push({ gameName: game.name, gameId: game.id, score: best.score, difficulty: null });
       } else {
-        // 有难度区分的游戏：每个难度取最高分
         game.diffs.forEach(d => {
           const diffItems = items.filter(it => {
             try {
@@ -571,29 +555,81 @@ async function loadMyRecords() {
         });
       }
     });
-    // 按游戏名分组排序
     bestList.sort((a, b) => {
       if (a.gameName !== b.gameName) return a.gameName.localeCompare(b.gameName);
       return (a.difficulty || '').localeCompare(b.difficulty || '');
     });
 
-    if (bestList.length) {
-      bestEl.innerHTML = bestList.map(b => {
-        const diffLabel = b.difficulty ? ' · ' + b.difficulty : '';
-        const diffKey = b.difficulty ? { '简': 'easy', '中': 'medium', '难': 'hard' }[b.difficulty] || null : null;
-        return `<div class="me-record-item">
-          <span class="me-record-game">${esc(b.gameName)}${diffLabel}</span>
-          <span class="me-record-score">${fmtLeaderScore(b.gameId, diffKey, b.score)}</span>
-        </div>`;
-      }).join('');
-    } else {
-      bestEl.innerHTML = '<div class="me-record-empty">暂无记录</div>';
-    }
+    _myRecordsCache = { recentAll, bestList };
+
+    // 默认展示前5条
+    renderRecentScores(recentEl, 5);
+    renderBestScores(bestEl, 5);
 
   } catch (e) {
     recentEl.innerHTML = '<div class="me-record-empty">加载失败，请稍后重试</div>';
     bestEl.innerHTML = '<div class="me-record-empty">加载失败，请稍后重试</div>';
   }
+}
+
+// 渲染近期记录，limit 条数
+function renderRecentScores(el, limit) {
+  if (!_myRecordsCache) return;
+  const { recentAll } = _myRecordsCache;
+  const items = recentAll.slice(0, limit);
+
+  if (!items.length) {
+    el.innerHTML = '<div class="me-record-empty">暂无游戏记录，快去玩一局吧</div>';
+    return;
+  }
+  let html = items.map(r => {
+    let diffLabel = '';
+    let diffKey = null;
+    try {
+      const m = typeof r.meta === 'string' ? JSON.parse(r.meta) : (r.meta || {});
+      if (m.difficulty) {
+        const dm = { easy: '简', medium: '中', hard: '难' };
+        diffLabel = ' · ' + (dm[m.difficulty] || m.difficulty);
+        diffKey = m.difficulty;
+      }
+    } catch (e) {}
+    const time = new Date(r.created_at).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return `<div class="me-record-item">
+      <span class="me-record-game">${esc(r.gameName)}${diffLabel}</span>
+      <span class="me-record-score">${fmtLeaderScore(r.gameId, diffKey, r.score)}</span>
+      <span class="me-record-time">${time}</span>
+    </div>`;
+  }).join('');
+
+  if (recentAll.length > limit) {
+    html += '<div class="me-record-more"><button onclick="renderRecentScores(document.getElementById(\'meRecentScores\'), 10)">查看更多</button></div>';
+  }
+  el.innerHTML = html;
+}
+
+// 渲染最强记录，limit 条数
+function renderBestScores(el, limit) {
+  if (!_myRecordsCache) return;
+  const { bestList } = _myRecordsCache;
+  const items = bestList.slice(0, limit);
+
+  if (!items.length) {
+    el.innerHTML = '<div class="me-record-empty">暂无记录</div>';
+    return;
+  }
+  let html = items.map(b => {
+    const diffLabel = b.difficulty ? ' · ' + b.difficulty : '';
+    const diffKey = b.difficulty ? { '简': 'easy', '中': 'medium', '难': 'hard' }[b.difficulty] || null : null;
+    return `<div class="me-record-item">
+      <span class="me-record-game">${esc(b.gameName)}${diffLabel}</span>
+      <span class="me-record-score">${fmtLeaderScore(b.gameId, diffKey, b.score)}</span>
+    </div>`;
+  }).join('');
+
+  if (bestList.length > limit) {
+    html += '<div class="me-record-more"><button onclick="renderBestScores(document.getElementById(\'meBestScores\'), 10)">查看更多</button></div>';
+  }
+  el.innerHTML = html;
 }
 
 // === 登录 / 注册 ===
