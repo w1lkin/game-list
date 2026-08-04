@@ -382,18 +382,30 @@ function renderGames() {
   });
 }
 
+// === 检查登录，未登录弹窗 ===
+function requireLogin(action) {
+  if (GP.getToken()) { action(); return; }
+  openModal('authModal');
+  // 登录成功后执行 action
+  _pendingLoginAction = action;
+}
+
+let _pendingLoginAction = null;
+
 // === 跳转游戏（带 token 实现 SSO）===
 function openGame(g) {
-  const u = new URL(g.url);
-  const token = GP.getToken();
-  if (token) u.searchParams.set('token', token);
-  u.searchParams.set('hub', location.origin);
-  location.href = u.toString();
+  requireLogin(() => {
+    const u = new URL(g.url);
+    u.searchParams.set('token', GP.getToken());
+    u.searchParams.set('hub', location.origin);
+    location.href = u.toString();
+  });
 }
 
 function openShare() {
-  const token = GP.getToken();
-  location.href = 'share-card.html' + (token ? ('?token=' + encodeURIComponent(token)) : '');
+  requireLogin(() => {
+    location.href = 'share-card.html?token=' + encodeURIComponent(GP.getToken());
+  });
 }
 
 // === 最强者（各游戏榜首，公开接口）===
@@ -452,6 +464,10 @@ function startBestFlip(gameId, count) {
 
 // === Tab 切换 ===
 function switchTab(tab) {
+  if (tab === 'me' && !GP.getToken()) {
+    openModal('authModal');
+    return;
+  }
   const isGames = tab === 'games';
   document.getElementById('pageGames').classList.toggle('active', isGames);
   document.getElementById('pageMe').classList.toggle('active', !isGames);
@@ -682,6 +698,8 @@ async function submitAuth() {
     }
     closeModal('authModal');
     toast(authTab === 'register' ? '注册成功 🎉' : '登录成功');
+    // 执行挂起的登录后操作
+    if (_pendingLoginAction) { const act = _pendingLoginAction; _pendingLoginAction = null; act(); }
   } catch (e) { msg.textContent = mapErr(e.message); }
 }
 
