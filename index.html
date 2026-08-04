@@ -38,16 +38,6 @@
   .btn.ghost { background: #f2f2f2; color: #555; border: none; }
   .btn[disabled] { opacity: .5; }
 
-  .online-banner {
-    display: flex; align-items: center; gap: 10px; padding: 10px 16px;
-    background: linear-gradient(90deg, #e8f5e9, #f1f8e9); overflow-x: auto;
-  }
-  .online-banner.hidden { display: none; }
-  .online-label { font-size: 13px; color: var(--primary-d); white-space: nowrap; font-weight: 600; }
-  .online-avatars { display: flex; gap: 6px; }
-  .online-avatars img { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); object-fit: cover; background: #e0e0e0; }
-  .online-more { font-size: 12px; color: var(--sub); white-space: nowrap; }
-
   main { padding: 8px 14px; }
   .cat-title { font-size: 15px; font-weight: 700; margin: 18px 4px 10px; color: var(--text); }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -181,11 +171,6 @@
 
 <!-- 游戏页 -->
 <section id="pageGames" class="page active">
-  <section id="onlineBanner" class="online-banner hidden">
-    <span class="online-label">🟢 在线</span>
-    <div id="onlineAvatars" class="online-avatars"></div>
-    <span id="onlineMore" class="online-more"></span>
-  </section>
   <main id="gameList"></main>
   <div class="section-hint">登录后跳转游戏自动带上身份 · 成绩进入天梯榜</div>
 </section>
@@ -340,8 +325,6 @@ function boot() {
     // 从游戏跳过来登录：自动弹出登录框
     if (new URLSearchParams(location.search).get('redirect')) openModal('authModal');
   }
-  loadOnline();
-  setInterval(loadOnline, 15000);
   loadBests();
 }
 
@@ -401,27 +384,6 @@ function openGame(g) {
 function openShare() {
   const token = GP.getToken();
   location.href = 'share-card.html' + (token ? ('?token=' + encodeURIComponent(token)) : '');
-}
-
-// === 在线横幅（全局在线，公开接口）===
-async function loadOnline() {
-  try {
-    const items = await GP.getOnlineGlobal();
-    const banner = document.getElementById('onlineBanner');
-    const box = document.getElementById('onlineAvatars');
-    const more = document.getElementById('onlineMore');
-    if (!items || !items.length) { banner.classList.add('hidden'); return; }
-    banner.classList.remove('hidden');
-    box.innerHTML = '';
-    items.slice(0, 12).forEach(p => {
-      const img = document.createElement('img');
-      img.src = p.avatar || DEFAULT_AVATAR;
-      img.title = p.nickname || '玩家';
-      img.onerror = () => { img.src = DEFAULT_AVATAR; };
-      box.appendChild(img);
-    });
-    more.textContent = items.length > 12 ? ('+' + (items.length - 12)) : '';
-  } catch (e) { /* 静默 */ }
 }
 
 // === 最强者（各游戏榜首，公开接口）===
