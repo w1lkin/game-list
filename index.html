@@ -330,8 +330,8 @@ function boot() {
     GP.getUser().then(u => u ? onLogin(u) : onLogout()).catch(onLogout);
   } else {
     onLogout();
-    // 从游戏跳过来登录：自动弹出登录框
-    if (new URLSearchParams(location.search).get('redirect')) openModal('authModal');
+    // 未登录统一弹窗提示登录/注册
+    openModal('authModal');
   }
   loadBests();
 }
