@@ -53,7 +53,9 @@
   .card-best { font-size: 12px; color: var(--primary-d); margin-top: 2px; position: relative; overflow: hidden; height: 19px; min-width: 0; }
   .card-best b { color: var(--text); font-weight: 700; }
   .card-best-track { display: flex; flex-direction: column; transition: transform .5s cubic-bezier(.4,0,.2,1); }
-  .card-best-item { white-space: nowrap; line-height: 1.6; height: 19px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; }
+  .card-best-item { display: flex; align-items: center; line-height: 1.6; height: 19px; flex-shrink: 0; }
+  .card-best-item .best-left { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .card-best-item .best-score { flex-shrink: 0; white-space: nowrap; }
 
   .modal {
     position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.45);
@@ -429,7 +431,10 @@ async function loadBests() {
           if (!items.length) { if (el) el.textContent = '👑 暂无记录'; continue; }
           if (el) {
             el.innerHTML = '<div class="card-best-track" id="best-track-' + g.id + '">' +
-              items.map(r => '<span class="card-best-item">👑 ' + esc(r.label) + ' <b>' + esc(r.top.nickname) + '</b> ' + fmtLeaderScore(g.id, r.top.meta ? (typeof r.top.meta === 'string' ? JSON.parse(r.top.meta).difficulty : r.top.meta.difficulty) : null, r.top.score) + '</span>').join('') +
+              items.map(r => {
+                const diffKey = r.top.meta ? (typeof r.top.meta === 'string' ? JSON.parse(r.top.meta).difficulty : r.top.meta.difficulty) : null;
+                return '<span class="card-best-item"><span class="best-left">👑 ' + esc(r.label) + ' <b>' + esc(r.top.nickname) + '</b></span><span class="best-score">' + fmtLeaderScore(g.id, diffKey, r.top.score) + '</span></span>';
+              }).join('') +
               '</div>';
             startBestFlip(g.id, items.length);
           }
@@ -438,7 +443,7 @@ async function loadBests() {
           const items = await GP.getLeaderboard(g.id, 1);
           if (el && items && items[0]) {
             const top = items[0];
-            el.innerHTML = `👑 最强者：<b>${esc(top.nickname)}</b> · ${fmtScore(top.score)}`;
+            el.innerHTML = `<span style="display:flex;align-items:center;min-width:0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">👑 最强者：<b>${esc(top.nickname)}</b></span><span style="flex-shrink:0;white-space:nowrap"> · ${fmtScore(top.score)}</span></span>`;
           } else if (el) {
             el.textContent = '👑 暂无记录';
           }
