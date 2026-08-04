@@ -51,8 +51,8 @@
   .card-desc { font-size: 12px; color: var(--sub); line-height: 1.4; min-height: 34px; }
   .card-best { font-size: 12px; color: var(--primary-d); margin-top: 2px; position: relative; overflow: hidden; height: 19px; }
   .card-best b { color: var(--text); font-weight: 700; }
-  .card-best-track { display: flex; flex-direction: column; transition: transform .4s ease; }
-  .card-best-item { white-space: nowrap; line-height: 1.6; }
+  .card-best-track { display: flex; flex-direction: column; transition: transform .5s cubic-bezier(.4,0,.2,1); }
+  .card-best-item { white-space: nowrap; line-height: 1.6; height: 19px; flex-shrink: 0; }
 
   .modal {
     position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.45);
@@ -418,21 +418,17 @@ async function loadBests() {
       const el = document.getElementById('best-' + g.id);
       try {
         if (g.diffs && g.diffs.length) {
-          // 多难度游戏：拉取各难度 top 1，纵向排列，自动翻页
+          // 多难度游戏：拉取各难度 top 1，循环翻页滚动
           const results = await Promise.all(
             g.diffs.map(d => GP.getLeaderboard(g.id, 1, d.key).then(items => ({ label: d.label, top: items[0] })))
           );
           const items = results.filter(r => r.top);
           if (!items.length) { if (el) el.textContent = '👑 暂无记录'; continue; }
           if (el) {
-            if (items.length <= 3) {
-              el.innerHTML = items.map(r => '<span class="card-best-item">👑 ' + esc(r.label) + ' <b>' + esc(r.top.nickname) + '</b> ' + fmtLeaderScore(g.id, r.top.meta ? (typeof r.top.meta === 'string' ? JSON.parse(r.top.meta).difficulty : r.top.meta.difficulty) : null, r.top.score) + '</span>').join('');
-            } else {
-              el.innerHTML = '<div class="card-best-track" id="best-track-' + g.id + '">' +
-                items.map(r => '<span class="card-best-item">👑 ' + esc(r.label) + ' <b>' + esc(r.top.nickname) + '</b> ' + fmtLeaderScore(g.id, r.top.meta ? (typeof r.top.meta === 'string' ? JSON.parse(r.top.meta).difficulty : r.top.meta.difficulty) : null, r.top.score) + '</span>').join('') +
-                '</div>';
-              startBestFlip(g.id, items.length);
-            }
+            el.innerHTML = '<div class="card-best-track" id="best-track-' + g.id + '">' +
+              items.map(r => '<span class="card-best-item">👑 ' + esc(r.label) + ' <b>' + esc(r.top.nickname) + '</b> ' + fmtLeaderScore(g.id, r.top.meta ? (typeof r.top.meta === 'string' ? JSON.parse(r.top.meta).difficulty : r.top.meta.difficulty) : null, r.top.score) + '</span>').join('') +
+              '</div>';
+            startBestFlip(g.id, items.length);
           }
         } else {
           // 无难度区分：取总榜 top 1
@@ -449,16 +445,43 @@ async function loadBests() {
   }
 }
 
-// 超过3条时自动翻页：每3秒切换一条，循环
+// 循环翻页滚动：克隆首条到末尾，实现无缝循环；每3秒向上滚动一条
 function startBestFlip(gameId, count) {
   const track = document.getElementById('best-track-' + gameId);
   if (!track) return;
-  let idx = 0;
-  const step = () => {
-    idx = (idx + 1) % count;
-    track.style.transform = 'translateY(-' + (idx * 100 / count) + '%)';
-  };
+  // 只有1条不需要滚动
+  if (count <= 1) return;
+
   clearInterval(_bestTimers[gameId]);
+
+  // 克隆第一条到末尾，实现无缝循环
+  const firstClone = track.children[0].cloneNode(true);
+  track.appendChild(firstClone);
+
+  const itemHeight = 19; // px，与 .card-best-item 的 height 一致
+  let idx = 0;
+  let inReset = false;
+
+  const step = () => {
+    idx++;
+    track.style.transition = 'transform .5s cubic-bezier(.4,0,.2,1)';
+    track.style.transform = 'translateY(-' + (idx * itemHeight) + 'px)';
+
+    // 滚动到克隆的第一条（即原始第0条的位置）时，瞬间重置
+    if (idx >= count) {
+      inReset = true;
+      setTimeout(() => {
+        track.style.transition = 'none';
+        track.style.transform = 'translateY(0)';
+        idx = 0;
+        // 强制回流后恢复 transition
+        track.offsetHeight;
+        track.style.transition = 'transform .5s cubic-bezier(.4,0,.2,1)';
+        inReset = false;
+      }, 500); // 与 CSS transition 时长一致
+    }
+  };
+
   _bestTimers[gameId] = setInterval(step, 3000);
 }
 
