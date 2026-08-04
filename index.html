@@ -315,6 +315,7 @@ let authTab = 'login';
 (function loadSDK() {
   const API_BASE = new URLSearchParams(location.search).get('api') || 'https://api.w1lkin.site';
   window.__GP_API_BASE__ = API_BASE;
+  window.__GP_HUB_URL__ = location.origin;
   const s = document.createElement('script');
   s.src = API_BASE + '/sdk.js';
   s.onload = boot;
@@ -386,6 +387,7 @@ function openGame(g) {
   const u = new URL(g.url);
   const token = GP.getToken();
   if (token) u.searchParams.set('token', token);
+  u.searchParams.set('hub', location.origin);
   location.href = u.toString();
 }
 
