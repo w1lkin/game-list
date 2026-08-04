@@ -601,8 +601,8 @@ function renderRecentScores(el, limit) {
     </div>`;
   }).join('');
 
-  if (recentAll.length > limit) {
-    html += '<div class="me-record-more"><button onclick="renderRecentScores(document.getElementById(\'meRecentScores\'), 10)">查看更多</button></div>';
+  if (recentAll.length > 5) {
+    html += '<div class="me-record-more"><button onclick="renderRecentScores(document.getElementById(\'meRecentScores\'), ' + (limit === 5 ? 10 : 5) + ')">' + (limit === 5 ? '查看更多' : '收起') + '</button></div>';
   }
   el.innerHTML = html;
 }
@@ -626,8 +626,8 @@ function renderBestScores(el, limit) {
     </div>`;
   }).join('');
 
-  if (bestList.length > limit) {
-    html += '<div class="me-record-more"><button onclick="renderBestScores(document.getElementById(\'meBestScores\'), 10)">查看更多</button></div>';
+  if (bestList.length > 5) {
+    html += '<div class="me-record-more"><button onclick="renderBestScores(document.getElementById(\'meBestScores\'), ' + (limit === 5 ? 10 : 5) + ')">' + (limit === 5 ? '查看更多' : '收起') + '</button></div>';
   }
   el.innerHTML = html;
 }
