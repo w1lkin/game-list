@@ -266,11 +266,10 @@
   }
   .lb-diff-title:first-child { margin-top: 0; padding-top: 2px; }
   /* 折叠状态：只显示前 N 条（由 data-show-count 决定） */
-  .lb-diff-collapsed .lb-more-btn { display: block; }
   .lb-diff-collapsed[data-show-count="2"] .lb-item:nth-child(n+3) { display: none; }
   .lb-diff-collapsed[data-show-count="3"] .lb-item:nth-child(n+4) { display: none; }
   .lb-diff-collapsed[data-show-count="5"] .lb-item:nth-child(n+6) { display: none; }
-  .lb-more-btn { display: none; text-align: center; padding: 6px;
+  .lb-more-btn { display: block; text-align: center; padding: 6px;
     color: #4472c4; font-size: 12px; cursor: pointer; }
   .lb-item {
     display: flex; align-items: center; gap: 8px; padding: 8px 0;
@@ -1064,6 +1063,12 @@ async function renderLeaderboardContent(g) {
   const content = document.getElementById('lbContent');
   if (_lbSelectedGame !== g.id) return; // 用户已切换
 
+  // 保存当前展开/折叠状态（轮询刷新时恢复）
+  const prevExpanded = {};
+  document.querySelectorAll('.lb-group').forEach(el => {
+    prevExpanded[el.id] = !el.classList.contains('lb-diff-collapsed');
+  });
+
   try {
     if (g.diffs && g.diffs.length) {
       // 多难度游戏（或多子测试分类：human-bench）
@@ -1102,20 +1107,28 @@ async function renderLeaderboardContent(g) {
           html += items.map((it, i) => renderLBItem(i, it, g.id, r.key)).join('');
         }
         if (items.length > showCount) {
-          html += `<div class="lb-more-btn" onclick="toggleLBGroup('${groupId}', this.parentElement.previousElementSibling, this)">展开全部 (${items.length})</div>`;
+          html += `<div class="lb-more-btn" onclick="toggleLBGroup('${groupId}', null, this)">展开全部 (${items.length})</div>`;
         }
         html += '</div>';
         return html;
       }).join('');
 
-      // innerHTML 不会执行内嵌 script，所以直接操作 DOM 折叠
+      // 恢复折叠/展开状态（轮询刷新时保持用户选择）
       requestAnimationFrame(() => {
         results.forEach((_, ri) => {
-          const g = document.getElementById('lb-group-' + ri);
+          const groupId = 'lb-group-' + ri;
+          const g = document.getElementById(groupId);
           if (!g) return;
-          g.classList.add('lb-diff-collapsed');
-          g.classList.add('lb-show-' + showCount);
           g.dataset.showCount = String(showCount);
+          if (prevExpanded[groupId]) {
+            // 之前展开的，保持展开
+            const btn = g.querySelector('.lb-more-btn');
+            if (btn) btn.textContent = '收起';
+          } else {
+            // 之前折叠的，恢复折叠
+            g.classList.add('lb-diff-collapsed');
+            g.classList.add('lb-show-' + showCount);
+          }
         });
       });
     } else {
