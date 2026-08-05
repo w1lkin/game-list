@@ -196,13 +196,37 @@
   }
   .lb-sidebar-wrap {
     position: relative; flex-shrink: 0; background: #fff; border-right: 1px solid var(--line);
-    transition: width .25s ease; width: 130px;
+    transition: width .25s ease; width: 130px; overflow: hidden;
+    display: flex; flex-direction: column;
   }
-  .lb-sidebar-wrap.collapsed { width: 0; border-right: none; }
-  .lb-sidebar-inner { width: 130px; height: 100%; display: flex; flex-direction: column; }
+  .lb-sidebar-wrap.collapsed {
+    width: 36px; border-right: 1px solid var(--line);
+  }
+  .lb-sidebar-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 8px; border-bottom: 1px solid var(--line); flex-shrink: 0;
+    height: 36px; box-sizing: border-box;
+  }
+  .lb-sidebar-header-label {
+    font-size: 12px; font-weight: 700; color: var(--sub); overflow: hidden;
+    white-space: nowrap; transition: opacity .15s;
+  }
+  .lb-sidebar-wrap.collapsed .lb-sidebar-header-label { opacity: 0; }
+  .lb-sidebar-toggle {
+    width: 22px; height: 22px; border: none; background: #f0f0f0;
+    border-radius: 6px; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; color: var(--sub);
+    flex-shrink: 0; transition: background .15s; line-height: 1;
+  }
+  .lb-sidebar-toggle:active { background: #e0e0e0; }
+  .lb-sidebar-inner {
+    flex: 1; overflow: hidden; display: flex; flex-direction: column;
+    transition: opacity .15s;
+  }
+  .lb-sidebar-wrap.collapsed .lb-sidebar-inner { opacity: 0; }
   .lb-sidebar {
-    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefox */
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; width: 130px;
+    scrollbar-width: none;
   }
   .lb-sidebar::-webkit-scrollbar { display: none; }
   .lb-sidebar-item {
@@ -304,10 +328,13 @@
 <section id="pageLeaderboard" class="page">
   <div class="lb-layout">
     <div class="lb-sidebar-wrap" id="lbSidebarWrap">
+      <div class="lb-sidebar-header">
+        <span class="lb-sidebar-header-label">游戏列表</span>
+        <button class="lb-sidebar-toggle" id="lbSidebarToggle" onclick="toggleSidebar()" title="折叠/展开">◀</button>
+      </div>
       <div class="lb-sidebar-inner">
         <div class="lb-sidebar" id="lbSidebar"></div>
       </div>
-      <div class="lb-sidebar-toggle" id="lbSidebarToggle" onclick="toggleSidebar()" title="折叠/展开">◀</div>
     </div>
     <div class="lb-content-wrap">
       <div class="lb-content" id="lbContent">
@@ -774,7 +801,8 @@ function toggleSidebar() {
   const wrap = document.getElementById('lbSidebarWrap');
   const toggle = document.getElementById('lbSidebarToggle');
   const isCollapsed = wrap.classList.toggle('collapsed');
-  toggle.innerHTML = isCollapsed ? '▶' : '◀';
+  toggle.textContent = isCollapsed ? '▶' : '◀';
+  toggle.title = isCollapsed ? '展开游戏列表' : '折叠游戏列表';
 }
 
 function initLeaderboardTab() {
