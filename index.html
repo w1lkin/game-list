@@ -1062,8 +1062,9 @@ async function renderLeaderboardContent(g) {
       const isHB = g.id === 'human-bench';
       const results = await Promise.all(
         g.diffs.map(d => {
-          if (isHB) return GP.getLeaderboard(g.id, 10, null, 'testId', d.key).then(items => ({ label: d.label, key: d.key, items }));
-          return GP.getLeaderboard(g.id, 10, d.key).then(items => ({ label: d.label, key: d.key, items }));
+          // 不过滤同用户，显示所有上分成绩
+          if (isHB) return GP.getLeaderboard(g.id, 10, null, 'testId', d.key, false).then(items => ({ label: d.label, key: d.key, items }));
+          return GP.getLeaderboard(g.id, 10, d.key, null, null, false).then(items => ({ label: d.label, key: d.key, items }));
         })
       );
       const hasAny = results.some(r => r.items && r.items.length > 0);
@@ -1084,8 +1085,8 @@ async function renderLeaderboardContent(g) {
         return html;
       }).join('');
     } else {
-      // 单难度游戏
-      const items = await GP.getLeaderboard(g.id, 10);
+      // 单难度游戏（不过滤同用户，显示所有上分成绩）
+      const items = await GP.getLeaderboard(g.id, 10, null, null, null, false);
       if (!items || !items.length) { content.innerHTML = '<div class="lb-empty">暂无记录，快来抢榜首！</div>'; return; }
       content.innerHTML = `<h2>🏆 ${esc(g.name)} 天梯榜</h2>` + items.map((it, i) => renderLBItem(i, it, g.id)).join('');
     }
