@@ -1046,27 +1046,6 @@ async function renderLeaderboardContent(g) {
   const content = document.getElementById('lbContent');
   if (_lbSelectedGame !== g.id) return; // 用户已切换
 
-  // 保存当前展开/折叠状态（轮询刷新时恢复）
-  const prevExpanded = {};
-  document.querySelectorAll('.lb-group').forEach(el => {
-    prevExpanded[el.id] = !el.classList.contains('lb-diff-collapsed');
-  });
-
-  // 保存滚动锚点：当前视口内第一个可见的分类标题索引（仅在已有内容时记录）
-  const isFirstRender = content.querySelector('.lb-diff-title') === null;
-  let anchorIndex = 0;
-  if (!isFirstRender) {
-    const contentWrap = document.getElementById('lbContentWrap');
-    if (contentWrap) {
-      const wrapTop = contentWrap.getBoundingClientRect().top;
-      const titles = content.querySelectorAll('.lb-diff-title');
-      for (let i = 0; i < titles.length; i++) {
-        const r = titles[i].getBoundingClientRect();
-        if (r.top >= wrapTop - 10) { anchorIndex = i; break; }
-      }
-    }
-  }
-
   try {
     if (g.diffs && g.diffs.length) {
       // 多难度游戏（或多子测试分类：human-bench）
@@ -1110,31 +1089,16 @@ async function renderLeaderboardContent(g) {
         return html;
       }).join('');
 
-      // 恢复折叠/展开状态 + 滚动锚点（轮询刷新时保持用户选择）
-      const hasPrev = Object.keys(prevExpanded).length > 0;
+      // 默认折叠
       requestAnimationFrame(() => {
         results.forEach((_, ri) => {
           const groupId = 'lb-group-' + ri;
           const g = document.getElementById(groupId);
           if (!g) return;
           g.dataset.showCount = String(showCount);
-          if (prevExpanded[groupId]) {
-            // 之前展开的，保持展开
-            const btn = g.querySelector('.lb-more-btn');
-            if (btn) btn.textContent = '收起';
-          } else {
-            // 之前折叠的，恢复折叠
-            g.classList.add('lb-diff-collapsed');
-            g.classList.add('lb-show-' + showCount);
-          }
+          g.classList.add('lb-diff-collapsed');
+          g.classList.add('lb-show-' + showCount);
         });
-        // 恢复滚动锚点（仅在之前已渲染过该游戏榜单时）
-        if (hasPrev) {
-          const titles = content.querySelectorAll('.lb-diff-title');
-          if (titles[anchorIndex]) {
-            titles[anchorIndex].scrollIntoView({ block: 'start' });
-          }
-        }
       });
     } else {
       // 单难度游戏（不过滤同用户，显示所有上分成绩）
