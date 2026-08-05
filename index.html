@@ -269,6 +269,9 @@
   .lb-diff-toggle { font-size: 11px; color: #999; transition: transform .2s; }
   /* 折叠状态：只显示前 3 条 */
   .lb-diff-collapsed .lb-item:nth-child(n+4) { display: none; }
+  .lb-diff-collapsed .lb-more-btn { display: block; }
+  .lb-more-btn { display: none; text-align: center; padding: 6px;
+    color: #4472c4; font-size: 12px; cursor: pointer; }
   .lb-item {
     display: flex; align-items: center; gap: 8px; padding: 8px 0;
     border-bottom: 1px solid #f5f5f5; font-size: 14px;
@@ -1075,8 +1078,7 @@ async function renderLeaderboardContent(g) {
       const hasAny = results.some(r => r.items && r.items.length > 0);
       if (!hasAny) { content.innerHTML = '<div class="lb-empty">暂无记录，快来抢榜首！</div>'; return; }
 
-      // 细分类超过 3 个时，每个分类默认折叠（只显示前 3 名），确保一屏可见所有分类第一名
-      const shouldCollapse = results.length > 3;
+      // 每个细分类默认只显示前 3 条，确保一屏可见所有分类第一名
       content.innerHTML = `<h2>🏆 ${esc(g.name)} 天梯榜</h2>` + results.map((r, ri) => {
         let items = r.items || [];
         // human-bench 的 reaction/aim_trainer 越小越好，前端反转排序
@@ -1093,11 +1095,13 @@ async function renderLeaderboardContent(g) {
         } else {
           html += items.map((it, i) => renderLBItem(i, it, g.id, r.key)).join('');
         }
-        html += '</div>';
-        // 分类过多时默认折叠，只显示前 3 名
-        if (shouldCollapse) {
-          html += `<script>setTimeout(function(){var g=document.getElementById('${groupId}');if(g){g.classList.add('lb-diff-collapsed');g.previousElementSibling.querySelector('.lb-diff-toggle').style.transform='rotate(-90deg)';}},0)<\/script>`;
+        // 超过 3 条时显示「展开全部」按钮
+        if (items.length > 3) {
+          html += `<div class="lb-more-btn" onclick="toggleLBGroup('${groupId}', this.parentElement.previousElementSibling)">展开全部 (${items.length})</div>`;
         }
+        html += '</div>';
+        // 默认折叠，只显示前 3 条
+        html += `<script>setTimeout(function(){var g=document.getElementById('${groupId}');if(g){g.classList.add('lb-diff-collapsed');g.previousElementSibling.querySelector('.lb-diff-toggle').style.transform='rotate(-90deg)';}},0)<\/script>`;
         return html;
       }).join('');
     } else {
