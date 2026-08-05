@@ -10,27 +10,55 @@
     --primary-d: #06A850;
   }
   /* 图标统一尺寸 + 颜色（模拟 iOS emoji 鲜艳风格） */
-  .ico { width: 20px; height: 20px; vertical-align: -4px; }
-  .ico-sm { width: 16px; height: 16px; vertical-align: -3px; }
-  .ico-lg { width: 24px; height: 24px; vertical-align: -5px; }
+  .ico { width: 20px; height: 20px; vertical-align: -4px; display: inline-block; }
+  .ico-sm { width: 16px; height: 16px; vertical-align: -3px; display: inline-block; }
+  .ico-lg { width: 24px; height: 24px; vertical-align: -5px; display: inline-block; }
+  /* 图标染色：用 background-color + mask 实现任意颜色（img currentColor 不生效） */
+  .ico, .ico-sm, .ico-lg {
+    background-color: currentColor;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+  }
+  /* 每个具体图标绑定 SVG 作为 mask */
+  .ico-gamepad { -webkit-mask-image: url(icons/gamepad.svg); mask-image: url(icons/gamepad.svg); }
+  .ico-house { -webkit-mask-image: url(icons/house.svg); mask-image: url(icons/house.svg); }
+  .ico-trophy { -webkit-mask-image: url(icons/trophy.svg); mask-image: url(icons/trophy.svg); }
+  .ico-user { -webkit-mask-image: url(icons/user.svg); mask-image: url(icons/user.svg); }
+  .ico-puzzle { -webkit-mask-image: url(icons/puzzle.svg); mask-image: url(icons/puzzle.svg); }
+  .ico-controller { -webkit-mask-image: url(icons/controller.svg); mask-image: url(icons/controller.svg); }
+  .ico-compass { -webkit-mask-image: url(icons/compass.svg); mask-image: url(icons/compass.svg); }
+  .ico-board { -webkit-mask-image: url(icons/board.svg); mask-image: url(icons/board.svg); }
+  .ico-crown { -webkit-mask-image: url(icons/crown.svg); mask-image: url(icons/crown.svg); }
+  .ico-medal-2 { -webkit-mask-image: url(icons/medal-2.svg); mask-image: url(icons/medal-2.svg); }
+  .ico-heart { -webkit-mask-image: url(icons/heart.svg); mask-image: url(icons/heart.svg); }
+  .ico-dice-2 { -webkit-mask-image: url(icons/dice-2.svg); mask-image: url(icons/dice-2.svg); }
+  .ico-share { -webkit-mask-image: url(icons/share.svg); mask-image: url(icons/share.svg); }
+  .ico-star { -webkit-mask-image: url(icons/star.svg); mask-image: url(icons/star.svg); }
+  .ico-puzzle-piece { -webkit-mask-image: url(icons/puzzle-piece.svg); mask-image: url(icons/puzzle-piece.svg); }
+  .ico-sparkle { -webkit-mask-image: url(icons/sparkle.svg); mask-image: url(icons/sparkle.svg); }
+  .ico-joystick { -webkit-mask-image: url(icons/joystick.svg); mask-image: url(icons/joystick.svg); }
   /* 按场景着色 */
-  .ico-clr-brand { color: #34C759; }       /* 游戏手柄 - 品牌绿 */
-  .ico-clr-tab-home { color: #007AFF; }     /* 主页 - iOS 蓝 */
-  .ico-clr-tab-lb { color: #FF9500; }       /* 天梯榜 - iOS 橙 */
-  .ico-clr-tab-me { color: #AF52DE; }       /* 我的 - iOS 紫 */
-  .ico-clr-cat-sim { color: #FF6B6B; }      /* 模拟体验 - 珊瑚红 */
-  .ico-clr-cat-casual { color: #34C759; }   /* 休闲娱乐 - 绿色 */
-  .ico-clr-cat-occult { color: #AF52DE; }   /* 玄学趣玩 - 紫色 */
-  .ico-clr-cat-brain { color: #FF9500; }    /* 脑力挑战 - 橙色 */
-  .ico-clr-crown { color: #FF9500; }        /* 皇冠 - 金色 */
-  .ico-clr-recent { color: #007AFF; }       /* 最近游玩 - 蓝色 */
-  .ico-clr-fav { color: #FF3B30; }          /* 最爱 - 红色 */
-  .ico-clr-dice { color: #8E8E93; }         /* 娱乐向 - 灰色 */
-  .ico-clr-share { color: #007AFF; }        /* 分享 - 蓝色 */
-  .ico-clr-edit { color: #FF9500; }         /* 编辑 - 橙色 */
-  .ico-clr-logout { color: #FF3B30; }       /* 退出 - 红色 */
-  .ico-clr-soon { color: #8E8E93; }         /* 即将上线 - 灰色 */
-  .ico-clr-quick { color: #FF9500; }        /* 快捷入口 - 橙色 */
+  .ico-clr-brand { color: #34C759; }
+  .ico-clr-tab-home { color: #007AFF; }
+  .ico-clr-tab-lb { color: #FF9500; }
+  .ico-clr-tab-me { color: #AF52DE; }
+  .ico-clr-cat-sim { color: #FF6B6B; }
+  .ico-clr-cat-casual { color: #34C759; }
+  .ico-clr-cat-occult { color: #AF52DE; }
+  .ico-clr-cat-brain { color: #FF9500; }
+  .ico-clr-crown { color: #FF9500; }
+  .ico-clr-recent { color: #007AFF; }
+  .ico-clr-fav { color: #FF3B30; }
+  .ico-clr-dice { color: #8E8E93; }
+  .ico-clr-share { color: #007AFF; }
+  .ico-clr-edit { color: #FF9500; }
+  .ico-clr-logout { color: #FF3B30; }
+  .ico-clr-soon { color: #8E8E93; }
+  .ico-clr-quick { color: #FF9500; }
     --bg: #f3f6f4;
     --card: #ffffff;
     --text: #2e3a33;
@@ -335,7 +363,7 @@
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><img src="icons/gamepad.svg" class="ico ico-clr-brand" alt=""> 小游戏</div>
+  <div class="brand"><span class="ico ico-clr-brand ico-gamepad" aria-hidden="true"></span> 小游戏</div>
 </header>
 
 <!-- 游戏页 -->
@@ -343,7 +371,7 @@
   <main>
     <!-- 最近游玩 & 最爱游戏 -->
     <div id="quickSection" style="display:none">
-      <div class="cat-title"><img src="icons/joystick.svg" class="ico-sm ico-clr-quick" alt=""> 快捷入口</div>
+      <div class="cat-title"><span class="ico-sm ico-clr-quick ico-joystick" aria-hidden="true"></span> 快捷入口</div>
       <div class="quick-bar" id="quickBar"></div>
     </div>
     <div id="gameList"></div>
@@ -379,23 +407,23 @@
   <main>
     <div class="me-profile" id="meProfile"></div>
     <div class="me-records" id="meRecords" style="display:none">
-      <div class="me-section-title"><img src="icons/medal-2.svg" class="ico-sm ico-clr-recent" alt=""> 近期游戏记录</div>
+      <div class="me-section-title"><span class="ico-sm ico-clr-recent ico-medal-2" aria-hidden="true"></span> 近期游戏记录</div>
       <div class="me-record-list" id="meRecentScores"></div>
-      <div class="me-section-title" style="margin-top:18px"><img src="icons/trophy.svg" class="ico-sm ico-clr-tab-lb" alt=""> 个人最强记录</div>
+      <div class="me-section-title" style="margin-top:18px"><span class="ico-sm ico-clr-tab-lb ico-trophy" aria-hidden="true"></span> 个人最强记录</div>
       <div class="me-record-list" id="meBestScores"></div>
     </div>
     <div class="me-menu">
       <div class="me-menu-item" onclick="openShare()">
-        <span class="me-menu-ico"><img src="icons/share.svg" class="ico ico-clr-share" alt=""></span>分享合集卡片
+        <span class="me-menu-ico"><span class="ico ico-clr-share ico-share" aria-hidden="true"></span></span>分享合集卡片
         <span class="me-menu-arrow">›</span>
       </div>
       <div id="meLoggedActions" class="me-menu-item-group" style="display:none">
         <div class="me-menu-item" onclick="openModal('profileModal')">
-          <span class="me-menu-ico"><img src="icons/star.svg" class="ico ico-clr-edit" alt=""></span>编辑资料
+          <span class="me-menu-ico"><span class="ico ico-clr-edit ico-star" aria-hidden="true"></span></span>编辑资料
           <span class="me-menu-arrow">›</span>
         </div>
         <div class="me-menu-item" onclick="doLogout()">
-          <span class="me-menu-ico"><img src="icons/puzzle-piece.svg" class="ico ico-clr-logout" alt=""></span>退出登录
+          <span class="me-menu-ico"><span class="ico ico-clr-logout ico-puzzle-piece" aria-hidden="true"></span></span>退出登录
           <span class="me-menu-arrow">›</span>
         </div>
       </div>
@@ -406,13 +434,13 @@
 <!-- 底部 Tab 栏 -->
 <nav class="tabbar">
   <button id="tabGames" class="active" onclick="switchTab('games')">
-    <span class="tab-ico"><img src="icons/house.svg" class="ico ico-clr-tab-home" alt=""></span>主页
+    <span class="tab-ico"><span class="ico ico-clr-tab-home ico-house" aria-hidden="true"></span></span>主页
   </button>
   <button id="tabLeaderboard" onclick="switchTab('leaderboard')">
-    <span class="tab-ico"><img src="icons/trophy.svg" class="ico ico-clr-tab-lb" alt=""></span>天梯榜
+    <span class="tab-ico"><span class="ico ico-clr-tab-lb ico-trophy" aria-hidden="true"></span></span>天梯榜
   </button>
   <button id="tabMe" onclick="switchTab('me')">
-    <span class="tab-ico"><img src="icons/user.svg" class="ico ico-clr-tab-me" alt=""></span>我的
+    <span class="tab-ico"><span class="ico ico-clr-tab-me ico-user" aria-hidden="true"></span></span>我的
   </button>
 </nav>
 
@@ -611,7 +639,7 @@ function renderGames() {
     h.className = 'cat-title';
     const iconName = cat.emoji || 'gamepad';
     const clrClass = { puzzle: 'ico-clr-cat-sim', controller: 'ico-clr-cat-casual', compass: 'ico-clr-cat-occult', board: 'ico-clr-cat-brain' }[iconName] || '';
-    h.innerHTML = '<img src="icons/' + iconName + '.svg" class="ico-sm ' + clrClass + '" alt=""> ' + esc(cat.name);
+    h.innerHTML = '<span class="ico-sm ' + clrClass + ' ico-' + iconName + '" aria-hidden="true"></span> ' + esc(cat.name);
     root.appendChild(h);
     const grid = document.createElement('div'); grid.className = 'grid';
     cat.games.forEach(g => {
@@ -620,7 +648,7 @@ function renderGames() {
       card.innerHTML =
         `<div class="card-name">${esc(g.name)}</div>` +
         `<div class="card-desc">${esc(g.desc)}</div>` +
-        `<div class="card-best" id="best-${g.id}">${g.enabled === false ? '<img src="icons/sparkle.svg" class="ico-sm ico-clr-soon" alt=""> 即将上线' : g.skip ? '<img src="icons/dice-2.svg" class="ico-sm ico-clr-dice" alt=""> 娱乐向 · 不计入天梯' : '<img src="icons/crown.svg" class="ico-sm ico-clr-crown" alt=""> 加载最强者…'}</div>`;
+        `<div class="card-best" id="best-${g.id}">${g.enabled === false ? '<span class="ico-sm ico-clr-soon ico-sparkle" aria-hidden="true"></span> 即将上线' : g.skip ? '<span class="ico-sm ico-clr-dice ico-dice-2" aria-hidden="true"></span> 娱乐向 · 不计入天梯' : '<span class="ico-sm ico-clr-crown ico-crown" aria-hidden="true"></span> 加载最强者…'}</div>`;
       grid.appendChild(card);
     });
     root.appendChild(grid);
@@ -688,7 +716,7 @@ async function loadQuickEntries() {
       const timeStr = e.time ? new Date(e.time).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) : '';
       const sub = e.type === 'recent' ? timeStr : (e.count ? '玩了 ' + e.count + ' 次' : '');
       return `<div class="quick-card" onclick="openGameById('${e.game.id}')">
-        <span class="quick-emoji"><img src="icons/${e.type === 'recent' ? 'medal-2' : 'heart'}.svg" class="ico ${e.type === 'recent' ? 'ico-clr-recent' : 'ico-clr-fav'}" alt=""></span>
+        <span class="quick-emoji"><span class="ico ${e.type === 'recent' ? 'ico-clr-recent' : 'ico-clr-fav'} ico-${e.type === 'recent' ? 'medal-2' : 'heart'}" aria-hidden="true"></span></span>
         <div class="quick-info">
           <div class="quick-label">${e.type === 'recent' ? '最近游玩' : '最爱游戏'}</div>
           <div class="quick-name">${esc(e.game.name)}</div>
@@ -758,12 +786,12 @@ async function loadBests() {
             g.diffs.map(d => GP.getLeaderboard(g.id, 1, d.key).then(items => ({ label: d.label, top: items[0] })))
           );
           const items = results.filter(r => r.top);
-          if (!items.length) { if (el) el.innerHTML = '<img src="icons/crown.svg" class="ico-sm ico-clr-crown" alt=""> 暂无记录'; continue; }
+          if (!items.length) { if (el) el.innerHTML = '<span class="ico-sm ico-clr-crown ico-crown" aria-hidden="true"></span> 暂无记录'; continue; }
           if (el) {
             el.innerHTML = '<div class="card-best-track" id="best-track-' + g.id + '">' +
               items.map(r => {
                 const diffKey = r.top.meta ? (typeof r.top.meta === 'string' ? JSON.parse(r.top.meta).difficulty : r.top.meta.difficulty) : null;
-                return '<span class="card-best-item"><span class="best-left"><img src="icons/crown.svg" class="ico-sm ico-clr-crown" alt=""> ' + esc(r.label) + ' <b>' + esc(r.top.nickname) + '</b></span><span class="best-score">' + fmtLeaderScore(g.id, diffKey, r.top.score) + '</span></span>';
+                return '<span class="card-best-item"><span class="best-left"><span class="ico-sm ico-clr-crown ico-crown" aria-hidden="true"></span> ' + esc(r.label) + ' <b>' + esc(r.top.nickname) + '</b></span><span class="best-score">' + fmtLeaderScore(g.id, diffKey, r.top.score) + '</span></span>';
               }).join('') +
               '</div>';
             startBestFlip(g.id, items.length);
@@ -772,12 +800,12 @@ async function loadBests() {
           const items = await GP.getLeaderboard(g.id, 1);
           if (el && items && items[0]) {
             const top = items[0];
-            el.innerHTML = `<span style="display:flex;align-items:center;min-width:0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0"><img src="icons/crown.svg" class="ico-sm ico-clr-crown" alt=""> 最强者：<b>${esc(top.nickname)}</b></span><span style="flex-shrink:0;white-space:nowrap"> · ${fmtScore(top.score)}</span></span>`;
+            el.innerHTML = `<span style="display:flex;align-items:center;min-width:0"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0"><span class="ico-sm ico-clr-crown ico-crown" aria-hidden="true"></span> 最强者：<b>${esc(top.nickname)}</b></span><span style="flex-shrink:0;white-space:nowrap"> · ${fmtScore(top.score)}</span></span>`;
           } else if (el) {
-            el.innerHTML = '<img src="icons/crown.svg" class="ico-sm ico-clr-crown" alt=""> 暂无记录';
+            el.innerHTML = '<span class="ico-sm ico-clr-crown ico-crown" aria-hidden="true"></span> 暂无记录';
           }
         }
-      } catch (e) { if (el) el.innerHTML = '<img src="icons/crown.svg" class="ico-sm ico-clr-crown" alt=""> 加载失败'; }
+      } catch (e) { if (el) el.innerHTML = '<span class="ico-sm ico-clr-crown ico-crown" aria-hidden="true"></span> 加载失败'; }
     }
   }
 }
@@ -984,11 +1012,11 @@ function selectLBGame(gameId) {
     content.innerHTML = '<div class="lb-loading">加载中…</div>';
 
     if (g.skip) {
-      content.innerHTML = '<div class="lb-empty"><img src="icons/dice-2.svg" class="ico-sm ico-clr-dice" alt=""> 娱乐向游戏，不计入天梯榜</div>';
+      content.innerHTML = '<div class="lb-empty"><span class="ico-sm ico-clr-dice ico-dice-2" aria-hidden="true"></span> 娱乐向游戏，不计入天梯榜</div>';
       return;
     }
   if (g.enabled === false) {
-    content.innerHTML = '<div class="lb-empty"><img src="icons/sparkle.svg" class="ico-sm ico-clr-soon" alt=""> 即将上线，敬请期待</div>';
+    content.innerHTML = '<div class="lb-empty"><span class="ico-sm ico-clr-soon ico-sparkle" aria-hidden="true"></span> 即将上线，敬请期待</div>';
     return;
   }
 
@@ -1009,7 +1037,7 @@ async function renderLeaderboardContent(g) {
       const hasAny = results.some(r => r.items && r.items.length > 0);
       if (!hasAny) { content.innerHTML = '<div class="lb-empty">暂无记录，快来抢榜首！</div>'; return; }
 
-      content.innerHTML = `<h2><img src="icons/trophy.svg" class="ico ico-clr-tab-lb" alt=""> ${esc(g.name)} 天梯榜</h2>` + results.map(r => {
+      content.innerHTML = `<h2><span class="ico ico-clr-tab-lb ico-trophy" aria-hidden="true"></span> ${esc(g.name)} 天梯榜</h2>` + results.map(r => {
         let html = '<div class="lb-diff-title">' + esc(r.label) + '</div>';
         if (!r.items || !r.items.length) {
           html += '<div class="lb-empty">暂无记录</div>';
@@ -1022,7 +1050,7 @@ async function renderLeaderboardContent(g) {
       // 单难度游戏
       const items = await GP.getLeaderboard(g.id, 10);
       if (!items || !items.length) { content.innerHTML = '<div class="lb-empty">暂无记录，快来抢榜首！</div>'; return; }
-      content.innerHTML = `<h2><img src="icons/trophy.svg" class="ico ico-clr-tab-lb" alt=""> ${esc(g.name)} 天梯榜</h2>` + items.map((it, i) => renderLBItem(i, it, g.id)).join('');
+      content.innerHTML = `<h2><span class="ico ico-clr-tab-lb ico-trophy" aria-hidden="true"></span> ${esc(g.name)} 天梯榜</h2>` + items.map((it, i) => renderLBItem(i, it, g.id)).join('');
     }
   } catch (e) {
     content.innerHTML = '<div class="lb-empty">加载失败，请稍后重试</div>';
