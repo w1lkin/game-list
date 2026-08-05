@@ -752,7 +752,16 @@ async function loadBests() {
           const results = await Promise.all(
             g.diffs.map(d => {
               // human-bench 的 diffs 是子测试分类（按 meta.testId 过滤），其他游戏按 difficulty
-              if (g.id === 'human-bench') return GP.getLeaderboard(g.id, 1, null, 'testId', d.key).then(items => ({ label: d.label, top: items[0] }));
+              if (g.id === 'human-bench') {
+                // asc 类（reaction/aim_trainer）取最后一条（最小值），desc 类取第一条（最大值）
+                const limit = HUMAN_BENCH_ASC.has(d.key) ? 10 : 1;
+                return GP.getLeaderboard(g.id, limit, null, 'testId', d.key).then(items => {
+                  const top = items && items.length > 0
+                    ? (HUMAN_BENCH_ASC.has(d.key) ? items[items.length - 1] : items[0])
+                    : null;
+                  return { label: d.label, top };
+                });
+              }
               return GP.getLeaderboard(g.id, 1, d.key).then(items => ({ label: d.label, top: items[0] }));
             })
           );
@@ -932,6 +941,12 @@ function renderIndexBar() {
   // 非 skip 且非 disabled 的游戏数 ≤ 6 时不显示索引栏
   const activeCount = _lbGames.filter(g => !g.skip && g.enabled !== false).length;
   if (activeCount <= 6) { bar.style.display = 'none'; return; }
+  // sidebar 内容未溢出（无需滚动）时也不显示索引栏
+  const sidebar = document.getElementById('lbSidebar');
+  if (sidebar && sidebar.scrollHeight <= sidebar.clientHeight) {
+    bar.style.display = 'none';
+    return;
+  }
   const letters = _lbGroups.map(g => g.letter);
   bar.style.display = '';
   bar.innerHTML = letters.map(l =>
@@ -1020,10 +1035,15 @@ async function renderLeaderboardContent(g) {
 
       content.innerHTML = `<h2>🏆 ${esc(g.name)} 天梯榜</h2>` + results.map(r => {
         let html = '<div class="lb-diff-title">' + esc(r.label) + '</div>';
-        if (!r.items || !r.items.length) {
+        let items = r.items || [];
+        // human-bench 的 reaction/aim_trainer 越小越好，前端反转排序
+        if (isHB && HUMAN_BENCH_ASC.has(r.key) && items.length > 0) {
+          items = [...items].reverse();
+        }
+        if (!items.length) {
           html += '<div class="lb-empty">暂无记录</div>';
         } else {
-          html += r.items.map((it, i) => renderLBItem(i, it, g.id, r.key)).join('');
+          html += items.map((it, i) => renderLBItem(i, it, g.id, r.key)).join('');
         }
         return html;
       }).join('');
