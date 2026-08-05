@@ -9,19 +9,7 @@
     --primary: #07C160;
     --primary-d: #06A850;
   }
-  /* Tab 图标（SVG mask 染色） */
-  .ico { width: 20px; height: 20px; vertical-align: -4px; display: inline-block;
-    background-color: currentColor;
-    -webkit-mask-size: contain; mask-size: contain;
-    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-    -webkit-mask-position: center; mask-position: center;
-  }
-  .ico-house { -webkit-mask-image: url(icons/house.svg); mask-image: url(icons/house.svg); }
-  .ico-trophy { -webkit-mask-image: url(icons/trophy.svg); mask-image: url(icons/trophy.svg); }
-  .ico-user { -webkit-mask-image: url(icons/user.svg); mask-image: url(icons/user.svg); }
-  .ico-clr-tab-home { color: #007AFF; }
-  .ico-clr-tab-lb { color: #FF9500; }
-  .ico-clr-tab-me { color: #AF52DE; }
+    </style>
     --bg: #f3f6f4;
     --card: #ffffff;
     --text: #2e3a33;
@@ -397,13 +385,13 @@
 <!-- 底部 Tab 栏 -->
 <nav class="tabbar">
   <button id="tabGames" class="active" onclick="switchTab('games')">
-    <span class="tab-ico"><span class="ico ico-clr-tab-home ico-house" aria-hidden="true"></span></span>主页
+    <span class="tab-ico">🏠</span>主页
   </button>
   <button id="tabLeaderboard" onclick="switchTab('leaderboard')">
-    <span class="tab-ico"><span class="ico ico-clr-tab-lb ico-trophy" aria-hidden="true"></span></span>天梯榜
+    <span class="tab-ico">🏆</span>天梯榜
   </button>
   <button id="tabMe" onclick="switchTab('me')">
-    <span class="tab-ico"><span class="ico ico-clr-tab-me ico-user" aria-hidden="true"></span></span>我的
+    <span class="tab-ico">👤</span>我的
   </button>
 </nav>
 
