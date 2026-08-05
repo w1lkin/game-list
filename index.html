@@ -1184,6 +1184,7 @@ function doLogout() { GP.logout(); onLogout(); toast('已退出'); }
 
 // === 个人游戏记录 ===
 let _myRecordsCache = null;
+let _gameDiffsMap = {}; // gameId -> diffs[] 映射（用于 human-bench testId -> label）
 async function loadMyRecords() {
   const recentEl = document.getElementById('meRecentScores');
   const bestEl = document.getElementById('meBestScores');
@@ -1196,11 +1197,14 @@ async function loadMyRecords() {
       if (!g.skip) allGames.push(g);
     });
   });
+  // 构建 gameId -> diffs 映射
+  _gameDiffsMap = {};
+  allGames.forEach(g => { _gameDiffsMap[g.id] = g.diffs || []; });
 
   try {
     const results = await Promise.all(
       allGames.map(async (g) => {
-        const items = await GP.getMyScores(g.id, 20);
+        const items = await GP.getMyScores(g.id, 200);
         return { game: g, items };
       })
     );
@@ -1219,21 +1223,30 @@ async function loadMyRecords() {
     let bestList = [];
     results.forEach(({ game, items }) => {
       if (!items.length) return;
-      if (!game.diffs || !game.diffs.length) {
+      const diffs = game.diffs || [];
+      const isHB = game.id === 'human-bench';
+      if (!diffs.length) {
+        // 无细分类：取最高分
         let best = items[0];
         items.forEach(it => { if (it.score > best.score) best = it; });
         bestList.push({ gameName: game.name, gameId: game.id, score: best.score, difficulty: null });
       } else {
-        game.diffs.forEach(d => {
+        diffs.forEach(d => {
           const diffItems = items.filter(it => {
             try {
               const m = typeof it.meta === 'string' ? JSON.parse(it.meta) : (it.meta || {});
+              if (isHB) return m.testId === d.key;
               return m.difficulty === d.key;
             } catch (e) { return false; }
           });
           if (!diffItems.length) return;
+          // human-bench asc 类取最小值，其他取最大值
           let best = diffItems[0];
-          diffItems.forEach(it => { if (it.score > best.score) best = it; });
+          if (isHB && HUMAN_BENCH_ASC.has(d.key)) {
+            diffItems.forEach(it => { if (it.score < best.score) best = it; });
+          } else {
+            diffItems.forEach(it => { if (it.score > best.score) best = it; });
+          }
           bestList.push({ gameName: game.name, gameId: game.id, score: best.score, difficulty: d.label });
         });
       }
@@ -1260,7 +1273,12 @@ function renderRecentScores(el, limit) {
     let diffLabel = '', diffKey = null;
     try {
       const m = typeof r.meta === 'string' ? JSON.parse(r.meta) : (r.meta || {});
-      if (m.difficulty) {
+      if (r.gameId === 'human-bench' && m.testId) {
+        // human-bench 按 testId 显示子测试名
+        const hbDiff = (_gameDiffsMap[r.gameId] || []).find(d => d.key === m.testId);
+        diffLabel = ' · ' + (hbDiff ? hbDiff.label : m.testId);
+        diffKey = m.testId;
+      } else if (m.difficulty) {
         const dm = { easy: '简', medium: '中', hard: '难' };
         diffLabel = ' · ' + (dm[m.difficulty] || m.difficulty);
         diffKey = m.difficulty;
@@ -1285,7 +1303,13 @@ function renderBestScores(el, limit) {
   if (!items.length) { el.innerHTML = '<div class="me-record-empty">暂无记录</div>'; return; }
   let html = items.map(b => {
     const diffLabel = b.difficulty ? ' · ' + b.difficulty : '';
-    const diffKey = b.difficulty ? { '简': 'easy', '中': 'medium', '难': 'hard' }[b.difficulty] || null : null;
+    let diffKey = null;
+    if (b.gameId === 'human-bench' && b.difficulty) {
+      const hbDiff = (_gameDiffsMap[b.gameId] || []).find(d => d.label === b.difficulty);
+      diffKey = hbDiff ? hbDiff.key : null;
+    } else if (b.difficulty) {
+      diffKey = { '简': 'easy', '中': 'medium', '难': 'hard' }[b.difficulty] || null;
+    }
     return `<div class="me-record-item">
       <span class="me-record-game">${esc(b.gameName)}${diffLabel}</span>
       <span class="me-record-score">${fmtLeaderScore(b.gameId, diffKey, b.score)}</span>
