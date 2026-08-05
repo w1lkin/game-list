@@ -262,8 +262,13 @@
   .lb-diff-title {
     font-size: 13px; font-weight: 700; color: #4472c4; padding: 10px 0 4px;
     border-bottom: 1px solid var(--line); margin-top: 4px;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
+    display: flex; align-items: center; gap: 6px;
   }
   .lb-diff-title:first-child { margin-top: 0; padding-top: 2px; }
+  .lb-diff-toggle { font-size: 11px; color: #999; transition: transform .2s; }
+  /* 折叠状态：只显示前 3 条 */
+  .lb-diff-collapsed .lb-item:nth-child(n+4) { display: none; }
   .lb-item {
     display: flex; align-items: center; gap: 8px; padding: 8px 0;
     border-bottom: 1px solid #f5f5f5; font-size: 14px;
@@ -1070,17 +1075,28 @@ async function renderLeaderboardContent(g) {
       const hasAny = results.some(r => r.items && r.items.length > 0);
       if (!hasAny) { content.innerHTML = '<div class="lb-empty">暂无记录，快来抢榜首！</div>'; return; }
 
-      content.innerHTML = `<h2>🏆 ${esc(g.name)} 天梯榜</h2>` + results.map(r => {
-        let html = '<div class="lb-diff-title">' + esc(r.label) + '</div>';
+      content.innerHTML = `<h2>🏆 ${esc(g.name)} 天梯榜</h2>` + results.map((r, ri) => {
         let items = r.items || [];
         // human-bench 的 reaction/aim_trainer 越小越好，前端反转排序
         if (isHB && HUMAN_BENCH_ASC.has(r.key) && items.length > 0) {
           items = [...items].reverse();
         }
+        const groupId = 'lb-group-' + ri;
+        const hasMore = items.length > 3;
+        let html = `<div class="lb-diff-title" onclick="toggleLBGroup('${groupId}', this)" title="点击折叠/展开">
+          ${esc(r.label)}<span class="lb-diff-toggle">▼</span>
+        </div>`;
+        html += `<div class="lb-group" id="${groupId}">`;
         if (!items.length) {
           html += '<div class="lb-empty">暂无记录</div>';
         } else {
           html += items.map((it, i) => renderLBItem(i, it, g.id, r.key)).join('');
+        }
+        html += '</div>';
+        // 超过 3 条默认折叠
+        if (hasMore) {
+          // 在脚本执行后折叠（内联 onclick 在 DOM 挂载后执行）
+          html += `<script>setTimeout(function(){var g=document.getElementById('${groupId}');if(g){g.classList.add('lb-diff-collapsed');g.previousElementSibling.querySelector('.lb-diff-toggle').style.transform='rotate(-90deg)';}},0)<\/script>`;
         }
         return html;
       }).join('');
@@ -1094,6 +1110,20 @@ async function renderLeaderboardContent(g) {
     content.innerHTML = '<div class="lb-empty">加载失败，请稍后重试</div>';
   }
 }
+
+// 折叠/展开天梯榜细分类
+window.toggleLBGroup = function(groupId, titleEl) {
+  const group = document.getElementById(groupId);
+  if (!group) return;
+  const toggle = titleEl.querySelector('.lb-diff-toggle');
+  if (group.classList.contains('lb-diff-collapsed')) {
+    group.classList.remove('lb-diff-collapsed');
+    if (toggle) toggle.style.transform = '';
+  } else {
+    group.classList.add('lb-diff-collapsed');
+    if (toggle) toggle.style.transform = 'rotate(-90deg)';
+  }
+};
 
 function renderLBItem(i, it, gameId, diffKey) {
   const medals = ['🥇', '🥈', '🥉'];
