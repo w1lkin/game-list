@@ -370,10 +370,6 @@
       <div class="me-record-list" id="meBestScores"></div>
     </div>
     <div class="me-menu">
-      <div class="me-menu-item" onclick="openShare()">
-        <span class="me-menu-ico">📤</span>分享合集卡片
-        <span class="me-menu-arrow">›</span>
-      </div>
       <div id="meLoggedActions" class="me-menu-item-group" style="display:none">
         <div class="me-menu-item" onclick="openModal('profileModal')">
           <span class="me-menu-ico">✏️</span>编辑资料
@@ -760,11 +756,6 @@ function openGameById(gameId) {
   if (g) openGame(g);
 }
 
-function openShare() {
-  requireLogin(() => {
-    location.href = 'share-card.html?token=' + encodeURIComponent(GP.getToken());
-  });
-}
 
 // === 最强者 ===
 const _bestTimers = {};
