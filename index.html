@@ -835,6 +835,12 @@ function switchTab(tab) {
   document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'leaderboard');
   document.getElementById('tabMe').classList.toggle('active', tab === 'me');
 
+  // 离开天梯榜时清除轮询
+  if (tab !== 'leaderboard' && _lbPollTimer) {
+    clearInterval(_lbPollTimer);
+    _lbPollTimer = null;
+  }
+
   if (tab === 'leaderboard') {
     initLeaderboardTab();
   }
@@ -844,6 +850,7 @@ function switchTab(tab) {
 let _lbGames = [];
 let _lbSelectedGame = null;
 let _lbGroups = []; // { letter, gameIds[] }
+let _lbPollTimer = null; // 5s 轮询定时器
 
 // 拼音首字母映射（仅需覆盖游戏名首字）
 const _PINYIN = {
@@ -1000,6 +1007,9 @@ function selectLBGame(gameId) {
     const g = findGame(gameId);
     if (!g) return;
 
+    // 清除旧轮询
+    if (_lbPollTimer) { clearInterval(_lbPollTimer); _lbPollTimer = null; }
+
     const content = document.getElementById('lbContent');
     content.innerHTML = '<div class="lb-loading">加载中…</div>';
 
@@ -1013,6 +1023,14 @@ function selectLBGame(gameId) {
   }
 
   renderLeaderboardContent(g);
+
+  // 5 秒轮询刷新当前天梯榜
+  if (!g.skip && g.enabled !== false) {
+    _lbPollTimer = setInterval(() => {
+      const cur = findGame(_lbSelectedGame);
+      if (cur && _lbSelectedGame === cur.id) renderLeaderboardContent(cur);
+    }, 5000);
+  }
   });
 }
 
