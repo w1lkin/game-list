@@ -498,7 +498,7 @@ async function boot() {
     GP.getUser().then(u => u ? onLogin(u) : onLogout()).catch(onLogout);
   } else {
     onLogout();
-    openModal('authModal');
+    // 不强制弹登录：让用户先浏览游戏和天梯榜，跳转游戏时再要求登录
   }
   loadBests();
 }
@@ -775,8 +775,14 @@ function startBestFlip(gameId, count) {
 
 // === Tab 切换 ===
 function switchTab(tab) {
-  if ((tab === 'me' || tab === 'leaderboard') && !GP.getToken()) {
+  // 天梯榜是公开数据，无需登录即可浏览
+  if (tab === 'me' && !GP.getToken()) {
     openModal('authModal');
+    // 防止 tab 高亮被误改：恢复上次的 tab 状态
+    const activeTab = document.querySelector('.tabbar button.active');
+    if (!activeTab || !activeTab.id) {
+      document.getElementById('tabGames').classList.add('active');
+    }
     return;
   }
   document.getElementById('pageGames').classList.toggle('active', tab === 'games');
