@@ -783,8 +783,8 @@ function startBestFlip(gameId, count) {
 
 // === Tab 切换 ===
 function switchTab(tab) {
-  // 「我的」tab 需要登录
-  if (tab === 'me' && !GP.getToken()) {
+  // 退出登录后，任何 tab 操作均弹出登录
+  if (!GP.getToken()) {
     openModal('authModal');
     return;
   }
