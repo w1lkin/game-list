@@ -192,7 +192,7 @@
 
   /* === 天梯榜 Tab === */
   .lb-layout {
-    display: flex; height: calc(100vh - 120px); overflow: hidden; position: relative;
+    display: flex; min-height: calc(100vh - 140px); overflow: hidden; position: relative;
   }
   .lb-sidebar-wrap {
     position: relative; flex-shrink: 0; background: #fff; border-right: 1px solid var(--line);
@@ -257,6 +257,7 @@
   }
   .lb-content {
     flex: 1; overflow-y: auto; padding: 14px 28px 14px 18px;
+    background: #fff;
   }
   .lb-content h2 { font-size: 16px; margin: 0 0 12px; color: var(--text); }
   .lb-diff-title {
