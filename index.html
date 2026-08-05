@@ -121,6 +121,23 @@
   .page { display: none; }
   .page.active { display: block; }
 
+  /* === 主页快捷入口 === */
+  .quick-bar {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px;
+  }
+  .quick-card {
+    background: var(--card); border-radius: 14px; padding: 14px; cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,.04); transition: transform .12s;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .quick-card:active { transform: scale(.98); }
+  .quick-emoji { font-size: 28px; flex-shrink: 0; }
+  .quick-info { flex: 1; min-width: 0; }
+  .quick-label { font-size: 11px; color: var(--sub); margin-bottom: 2px; }
+  .quick-name { font-size: 15px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .quick-sub { font-size: 11px; color: var(--sub); margin-top: 2px; }
+  .quick-empty { text-align: center; color: var(--sub); font-size: 13px; padding: 10px 0; }
+
   /* === 我的页 === */
   .me-profile {
     background: var(--card); border-radius: 16px; padding: 22px 18px;
@@ -134,7 +151,6 @@
   .me-info { flex: 1; min-width: 0; }
   .me-name { font-size: 18px; font-weight: 700; }
   .me-sub { font-size: 12px; color: var(--sub); margin-top: 4px; }
-  /* 个人记录区块 */
   .me-records { margin-top: 14px; }
   .me-section-title {
     font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 8px;
@@ -173,6 +189,48 @@
   .me-menu-ico { font-size: 20px; }
   .me-menu-arrow { margin-left: auto; color: #ccc; font-size: 16px; }
   .me-menu-item-group { border-top: 1px solid var(--line); }
+
+  /* === 天梯榜 Tab === */
+  .lb-layout {
+    display: flex; height: calc(100vh - 120px); /* 减去 topbar + tabbar */
+    overflow: hidden;
+  }
+  .lb-sidebar {
+    width: 130px; flex-shrink: 0; overflow-y: auto; background: #fff;
+    border-right: 1px solid var(--line);
+  }
+  .lb-sidebar-item {
+    padding: 14px 12px; font-size: 14px; cursor: pointer; color: var(--text);
+    border-bottom: 1px solid var(--line); transition: background .15s;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .lb-sidebar-item:active { background: #fafafa; }
+  .lb-sidebar-item.active { color: var(--primary); font-weight: 700; background: #f0faf3; }
+  .lb-sidebar-item .lb-skip-badge { font-size: 10px; color: var(--sub); display: block; }
+  .lb-content {
+    flex: 1; overflow-y: auto; padding: 14px;
+  }
+  .lb-content h2 { font-size: 16px; margin: 0 0 12px; color: var(--text); }
+  .lb-diff-title {
+    font-size: 13px; font-weight: 700; color: #4472c4; padding: 10px 0 4px;
+    border-bottom: 1px solid var(--line); margin-top: 4px;
+  }
+  .lb-diff-title:first-child { margin-top: 0; padding-top: 2px; }
+  .lb-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px 0;
+    border-bottom: 1px solid #f5f5f5; font-size: 14px;
+  }
+  .lb-item:last-child { border-bottom: none; }
+  .lb-rank { width: 24px; height: 24px; border-radius: 50%; background: #81C784; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex: none; }
+  .lb-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #e0e0e0; border: 1px solid #fff; flex-shrink: 0; }
+  .lb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-score { color: #2e7d32; font-weight: 600; white-space: nowrap; }
+  .lb-empty { text-align: center; color: var(--sub); font-size: 14px; padding: 30px 0; }
+  .lb-loading { text-align: center; color: var(--sub); font-size: 14px; padding: 30px 0; }
+  .lb-placeholder {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; color: var(--sub); font-size: 14px;
+  }
 </style>
 </head>
 <body>
@@ -182,20 +240,34 @@
 
 <!-- 游戏页 -->
 <section id="pageGames" class="page active">
-  <main id="gameList"></main>
-  <div class="section-hint">登录后跳转游戏自动带上身份 · 成绩进入天梯榜</div>
+  <main>
+    <!-- 最近游玩 & 最爱游戏 -->
+    <div id="quickSection" style="display:none">
+      <div class="cat-title">📌 快捷入口</div>
+      <div class="quick-bar" id="quickBar"></div>
+    </div>
+    <div id="gameList"></div>
+    <div class="section-hint">登录后跳转游戏自动带上身份 · 成绩进入天梯榜</div>
+  </main>
+</section>
+
+<!-- 天梯榜页 -->
+<section id="pageLeaderboard" class="page">
+  <div class="lb-layout">
+    <div class="lb-sidebar" id="lbSidebar"></div>
+    <div class="lb-content" id="lbContent">
+      <div class="lb-placeholder">← 选择一个游戏查看天梯榜</div>
+    </div>
+  </div>
 </section>
 
 <!-- 我的页 -->
 <section id="pageMe" class="page">
   <main>
     <div class="me-profile" id="meProfile"></div>
-    <!-- 个人游戏记录（登录后显示） -->
     <div class="me-records" id="meRecords" style="display:none">
-      <!-- 近期游戏记录 -->
       <div class="me-section-title">🕐 近期游戏记录</div>
       <div class="me-record-list" id="meRecentScores"></div>
-      <!-- 个人最强记录 -->
       <div class="me-section-title" style="margin-top:18px">🏆 个人最强记录</div>
       <div class="me-record-list" id="meBestScores"></div>
     </div>
@@ -222,6 +294,9 @@
 <nav class="tabbar">
   <button id="tabGames" class="active" onclick="switchTab('games')">
     <span class="tab-ico">🏠</span>主页
+  </button>
+  <button id="tabLeaderboard" onclick="switchTab('leaderboard')">
+    <span class="tab-ico">🏆</span>天梯榜
   </button>
   <button id="tabMe" onclick="switchTab('me')">
     <span class="tab-ico">👤</span>我的
@@ -270,8 +345,8 @@
 <div id="toast"></div>
 
 <script>
-// === 游戏配置（带 game_id 用于拉取天梯；lunch 为娱乐向不计入天梯）===
-const GAMES = {
+// === 游戏数据：从 API 动态加载，带静态 fallback ===
+let GAMES = {
   categories: [
     { emoji: '🎭', name: '模拟体验', games: [
       { id: 'life-restart-simulator', name: '人生重开模拟器', desc: '异世界转生，选择种族天赋经历人生抉择', url: 'https://life-restart-simulator-a7b.pages.dev/' },
@@ -293,11 +368,9 @@ const GAMES = {
   ]
 };
 
-// 默认头像：透明 1x1 PNG base64（兼容微信 webview 等不支持 SVG data URI 的环境），
-// 灰色圆形底色由 CSS background 提供，真实头像通过 object-fit:cover 覆盖。
+// 默认头像
 const DEFAULT_AVATAR = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
-// 扫雷天梯 score = base + 实际用时(秒)，展示时需减去 base 还原为纯用时
 const MINE_BASES = { easy: 100000, medium: 300000, hard: 600000 };
 function fmtLeaderScore(gameId, difficulty, rawScore) {
   if (gameId === 'mine-sweeper') {
@@ -305,17 +378,16 @@ function fmtLeaderScore(gameId, difficulty, rawScore) {
     const s = (Number(rawScore) || 0) - base;
     return (Number.isInteger(s) ? String(s) : s.toFixed(1)) + 's';
   }
-  // 贪吃蛇：蛇长度
   if (gameId === 'greedy-snake') return fmtScore(rawScore) + ' 节';
-  // 其他游戏
   return fmtScore(rawScore);
 }
 
 let GP = null;
 let currentUser = null;
 let authTab = 'login';
+let _allGamesFlat = []; // 从 API 加载的扁平游戏列表
 
-// === 动态加载 SDK（支持 ?api= 覆盖，本地 wrangler dev 联调用 ?api=http://localhost:8787）===
+// === 动态加载 SDK ===
 (function loadSDK() {
   const API_BASE = new URLSearchParams(location.search).get('api') || 'https://api.w1lkin.site';
   window.__GP_API_BASE__ = API_BASE;
@@ -327,18 +399,69 @@ let authTab = 'login';
   document.head.appendChild(s);
 })();
 
-function boot() {
+async function boot() {
   GP = window.GamePlatform;
   GP.init();
+  await loadGamesFromAPI();
   renderGames();
   if (GP.getToken()) {
     GP.getUser().then(u => u ? onLogin(u) : onLogout()).catch(onLogout);
   } else {
     onLogout();
-    // 未登录统一弹窗提示登录/注册
     openModal('authModal');
   }
   loadBests();
+}
+
+// === 从 API 加载游戏列表（优先数据库，降级静态配置）===
+async function loadGamesFromAPI() {
+  try {
+    const games = await GP.getGames();
+    if (games && games.length > 0) {
+      // 按 category 分组
+      const catMap = new Map();
+      games.forEach(g => {
+        if (!catMap.has(g.category)) {
+          catMap.set(g.category, { emoji: g.emoji || '🎮', name: g.category, games: [] });
+        }
+        catMap.get(g.category).games.push({
+          id: g.game_id,
+          name: g.label,
+          desc: g.desc || '',
+          url: g.url || '',
+          skip: g.skip,
+          diffs: g.diffs || null,
+        });
+      });
+      // 按分类名排序（保持一致的展示顺序）
+      const catOrder = ['模拟体验', '休闲娱乐', '玄学趣玩', '脑力挑战'];
+      const categories = [];
+      catOrder.forEach(name => {
+        if (catMap.has(name)) categories.push(catMap.get(name));
+      });
+      // 处理未知分类
+      catMap.forEach((v, k) => {
+        if (!catOrder.includes(k)) categories.push(v);
+      });
+      GAMES.categories = categories;
+      // 构建扁平列表
+      _allGamesFlat = games.map(g => ({
+        id: g.game_id, name: g.label, desc: g.desc || '', url: g.url || '',
+        skip: g.skip, diffs: g.diffs || null, direction: g.direction,
+      }));
+    }
+  } catch (e) {
+    console.warn('load games from API failed, using static fallback:', e);
+    buildFlatFromStatic();
+  }
+}
+
+function buildFlatFromStatic() {
+  const flat = [];
+  GAMES.categories.forEach(cat => {
+    cat.games.forEach(g => flat.push({ ...g, direction: 'desc' }));
+  });
+  _allGamesFlat = flat;
 }
 
 // === 工具 ===
@@ -386,17 +509,98 @@ function renderGames() {
   });
 }
 
-// === 检查登录，未登录弹窗 ===
+// === 快捷入口：最近游玩 + 最爱游戏 ===
+async function loadQuickEntries() {
+  if (!GP.getToken()) { document.getElementById('quickSection').style.display = 'none'; return; }
+  if (!_allGamesFlat.length) { buildFlatFromStatic(); }
+
+  const quickBar = document.getElementById('quickBar');
+  const quickSection = document.getElementById('quickSection');
+  quickBar.innerHTML = '';
+
+  try {
+    // 拉取所有游戏的个人记录，找出最近游玩和最爱
+    const gameIds = _allGamesFlat.filter(g => !g.skip).map(g => g.id);
+    const results = await Promise.all(
+      gameIds.map(id => GP.getMyScores(id, 50).then(items => ({ gameId: id, items })))
+    );
+
+    // 最近游玩：各游戏最近一次游玩时间，取 top 2
+    let recentList = [];
+    results.forEach(({ gameId, items }) => {
+      if (items.length > 0) {
+        recentList.push({ gameId, lastPlayed: Math.max(...items.map(i => i.created_at)), count: items.length });
+      }
+    });
+    recentList.sort((a, b) => b.lastPlayed - a.lastPlayed);
+    const topRecent = recentList.slice(0, 2);
+
+    // 最爱游戏：游玩次数最多，取 top 2
+    let favList = [...recentList];
+    favList.sort((a, b) => b.count - a.count);
+    const topFav = favList.slice(0, 2);
+
+    const entries = [];
+    if (topRecent.length > 0) {
+      const g = findGame(topRecent[0].gameId);
+      if (g) entries.push({ type: 'recent', label: '🕐 最近游玩', game: g, time: topRecent[0].lastPlayed });
+    }
+    if (topRecent.length > 1) {
+      const g = findGame(topRecent[1].gameId);
+      if (g) entries.push({ type: 'recent', label: '🕐 最近游玩', game: g, time: topRecent[1].lastPlayed });
+    }
+
+    if (entries.length < 2 && topFav.length > 0) {
+      // 用最爱游戏补充
+      for (const fav of topFav) {
+        if (entries.length >= 2) break;
+        if (entries.some(e => e.game.id === fav.gameId)) continue;
+        const g = findGame(fav.gameId);
+        if (g) entries.push({ type: 'fav', label: '❤️ 最爱游戏', game: g, count: fav.count });
+      }
+    }
+
+    if (entries.length === 0) {
+      quickSection.style.display = 'none';
+      return;
+    }
+    quickSection.style.display = '';
+
+    quickBar.innerHTML = entries.map(e => {
+      const timeStr = e.time ? new Date(e.time).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) : '';
+      const sub = e.type === 'recent' ? timeStr : (e.count ? '玩了 ' + e.count + ' 次' : '');
+      return `<div class="quick-card" onclick="openGameById('${e.game.id}')">
+        <span class="quick-emoji">${e.type === 'recent' ? '🕐' : '❤️'}</span>
+        <div class="quick-info">
+          <div class="quick-label">${e.label}</div>
+          <div class="quick-name">${esc(e.game.name)}</div>
+          ${sub ? '<div class="quick-sub">' + sub + '</div>' : ''}
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    quickSection.style.display = 'none';
+  }
+}
+
+function findGame(gameId) {
+  for (const cat of GAMES.categories) {
+    for (const g of cat.games) {
+      if (g.id === gameId) return g;
+    }
+  }
+  return null;
+}
+
+// === 检查登录 ===
 function requireLogin(action) {
   if (GP.getToken()) { action(); return; }
   openModal('authModal');
-  // 登录成功后执行 action
   _pendingLoginAction = action;
 }
-
 let _pendingLoginAction = null;
 
-// === 跳转游戏（带 token 实现 SSO）===
+// === 跳转游戏 ===
 function openGame(g) {
   if (!g.url) { toast('即将上线，敬请期待'); return; }
   requireLogin(() => {
@@ -406,6 +610,10 @@ function openGame(g) {
     location.href = u.toString();
   });
 }
+function openGameById(gameId) {
+  const g = findGame(gameId);
+  if (g) openGame(g);
+}
 
 function openShare() {
   requireLogin(() => {
@@ -413,8 +621,7 @@ function openShare() {
   });
 }
 
-// === 最强者（各游戏榜首，公开接口）===
-// 有难度区分的游戏按难度分别展示榜首，超过3条自动翻页
+// === 最强者 ===
 const _bestTimers = {};
 async function loadBests() {
   for (const cat of GAMES.categories) {
@@ -423,7 +630,6 @@ async function loadBests() {
       const el = document.getElementById('best-' + g.id);
       try {
         if (g.diffs && g.diffs.length) {
-          // 多难度游戏：拉取各难度 top 1，循环翻页滚动
           const results = await Promise.all(
             g.diffs.map(d => GP.getLeaderboard(g.id, 1, d.key).then(items => ({ label: d.label, top: items[0] })))
           );
@@ -439,7 +645,6 @@ async function loadBests() {
             startBestFlip(g.id, items.length);
           }
         } else {
-          // 无难度区分：取总榜 top 1
           const items = await GP.getLeaderboard(g.id, 1);
           if (el && items && items[0]) {
             const top = items[0];
@@ -452,61 +657,146 @@ async function loadBests() {
     }
   }
 }
-
-// 循环翻页滚动：克隆首条到末尾，实现无缝循环；每3秒向上滚动一条
 function startBestFlip(gameId, count) {
   const track = document.getElementById('best-track-' + gameId);
   if (!track) return;
-  // 只有1条不需要滚动
   if (count <= 1) return;
-
   clearInterval(_bestTimers[gameId]);
-
-  // 克隆第一条到末尾，实现无缝循环
   const firstClone = track.children[0].cloneNode(true);
   track.appendChild(firstClone);
-
-  const itemHeight = 19; // px，与 .card-best-item 的 height 一致
+  const itemHeight = 19;
   let idx = 0;
-  let inReset = false;
-
   const step = () => {
     idx++;
     track.style.transition = 'transform .5s cubic-bezier(.4,0,.2,1)';
     track.style.transform = 'translateY(-' + (idx * itemHeight) + 'px)';
-
-    // 滚动到克隆的第一条（即原始第0条的位置）时，瞬间重置
     if (idx >= count) {
-      inReset = true;
       setTimeout(() => {
         track.style.transition = 'none';
         track.style.transform = 'translateY(0)';
         idx = 0;
-        // 强制回流后恢复 transition
         track.offsetHeight;
         track.style.transition = 'transform .5s cubic-bezier(.4,0,.2,1)';
-        inReset = false;
-      }, 500); // 与 CSS transition 时长一致
+      }, 500);
     }
   };
-
   _bestTimers[gameId] = setInterval(step, 3000);
 }
 
 // === Tab 切换 ===
 function switchTab(tab) {
-  if (tab === 'me' && !GP.getToken()) {
+  if ((tab === 'me' || tab === 'leaderboard') && !GP.getToken()) {
     openModal('authModal');
     return;
   }
-  const isGames = tab === 'games';
-  document.getElementById('pageGames').classList.toggle('active', isGames);
-  document.getElementById('pageMe').classList.toggle('active', !isGames);
-  document.getElementById('tabGames').classList.toggle('active', isGames);
-  document.getElementById('tabMe').classList.toggle('active', !isGames);
+  document.getElementById('pageGames').classList.toggle('active', tab === 'games');
+  document.getElementById('pageLeaderboard').classList.toggle('active', tab === 'leaderboard');
+  document.getElementById('pageMe').classList.toggle('active', tab === 'me');
+  document.getElementById('tabGames').classList.toggle('active', tab === 'games');
+  document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'leaderboard');
+  document.getElementById('tabMe').classList.toggle('active', tab === 'me');
+
+  if (tab === 'leaderboard') {
+    initLeaderboardTab();
+  }
 }
 
-// === 登录态渲染（个人信息与操作放「我的」页）===
+// === 天梯榜 Tab ===
+let _lbGames = [];
+let _lbSelectedGame = null;
+
+function initLeaderboardTab() {
+  const sidebar = document.getElementById('lbSidebar');
+  if (sidebar.children.length > 0) return; // 已初始化
+
+  // 构建游戏列表（按名称首字母排序，skip 的游戏排在后面）
+  _lbGames = [];
+  GAMES.categories.forEach(cat => {
+    cat.games.forEach(g => _lbGames.push(g));
+  });
+  _lbGames.sort((a, b) => {
+    if (a.skip !== b.skip) return a.skip ? 1 : -1;
+    return a.name.localeCompare(b.name, 'zh-CN');
+  });
+
+  sidebar.innerHTML = _lbGames.map(g =>
+    `<div class="lb-sidebar-item${g.skip ? ' lb-skip-item' : ''}" data-game="${g.id}" onclick="selectLBGame('${g.id}')">
+      ${esc(g.name)}${g.skip ? '<span class="lb-skip-badge">娱乐向</span>' : ''}
+    </div>`
+  ).join('');
+
+  // 默认选中第一个非 skip 游戏
+  const first = _lbGames.find(g => !g.skip);
+  if (first) selectLBGame(first.id);
+}
+
+function selectLBGame(gameId) {
+  _lbSelectedGame = gameId;
+  // 更新侧边栏高亮
+  document.querySelectorAll('.lb-sidebar-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.game === gameId);
+  });
+
+  const g = findGame(gameId);
+  if (!g) return;
+
+  const content = document.getElementById('lbContent');
+  content.innerHTML = '<div class="lb-loading">加载中…</div>';
+
+  if (g.skip) {
+    content.innerHTML = '<div class="lb-empty">🎲 娱乐向游戏，不计入天梯榜</div>';
+    return;
+  }
+
+  renderLeaderboardContent(g);
+}
+
+async function renderLeaderboardContent(g) {
+  const content = document.getElementById('lbContent');
+  if (_lbSelectedGame !== g.id) return; // 用户已切换
+
+  try {
+    if (g.diffs && g.diffs.length) {
+      // 多难度游戏
+      const results = await Promise.all(
+        g.diffs.map(d => GP.getLeaderboard(g.id, 10, d.key).then(items => ({ label: d.label, key: d.key, items })))
+      );
+      const hasAny = results.some(r => r.items && r.items.length > 0);
+      if (!hasAny) { content.innerHTML = '<div class="lb-empty">暂无记录，快来抢榜首！</div>'; return; }
+
+      content.innerHTML = `<h2>🏆 ${esc(g.name)} 天梯榜</h2>` + results.map(r => {
+        let html = '<div class="lb-diff-title">' + esc(r.label) + '</div>';
+        if (!r.items || !r.items.length) {
+          html += '<div class="lb-empty">暂无记录</div>';
+        } else {
+          html += r.items.map((it, i) => renderLBItem(i, it, g.id, r.key)).join('');
+        }
+        return html;
+      }).join('');
+    } else {
+      // 单难度游戏
+      const items = await GP.getLeaderboard(g.id, 10);
+      if (!items || !items.length) { content.innerHTML = '<div class="lb-empty">暂无记录，快来抢榜首！</div>'; return; }
+      content.innerHTML = `<h2>🏆 ${esc(g.name)} 天梯榜</h2>` + items.map((it, i) => renderLBItem(i, it, g.id)).join('');
+    }
+  } catch (e) {
+    content.innerHTML = '<div class="lb-empty">加载失败，请稍后重试</div>';
+  }
+}
+
+function renderLBItem(i, it, gameId, diffKey) {
+  const medals = ['🥇', '🥈', '🥉'];
+  const rankHtml = i < 3 ? medals[i] : '<span class="lb-rank">' + (i + 1) + '</span>';
+  const scoreStr = diffKey ? fmtLeaderScore(gameId, diffKey, it.score) : fmtScore(it.score);
+  return `<div class="lb-item">
+    ${rankHtml}
+    <img class="lb-avatar" src="${it.avatar_url || DEFAULT_AVATAR}" onerror="this.style.background='#e0e0e0'">
+    <span class="lb-name">${esc(it.nickname || '匿名')}</span>
+    <span class="lb-score">${scoreStr}</span>
+  </div>`;
+}
+
+// === 登录态渲染 ===
 function onLogin(user) {
   currentUser = user;
   const box = document.getElementById('meProfile');
@@ -517,11 +807,10 @@ function onLogin(user) {
      </div>`;
   box.style.cursor = '';
   box.onclick = null;
-  // 显示编辑资料/退出登录（在分享卡片下方菜单中）
   document.getElementById('meLoggedActions').style.display = '';
-  // 显示个人记录区块并加载数据
   document.getElementById('meRecords').style.display = '';
   loadMyRecords();
+  loadQuickEntries();
 }
 function onLogout() {
   currentUser = null;
@@ -534,17 +823,14 @@ function onLogout() {
      </div>`;
   box.style.cursor = 'pointer';
   box.onclick = () => openModal('authModal');
-  // 隐藏编辑资料/退出登录
   document.getElementById('meLoggedActions').style.display = 'none';
-  // 隐藏个人记录区块
   document.getElementById('meRecords').style.display = 'none';
+  document.getElementById('quickSection').style.display = 'none';
 }
 function doLogout() { GP.logout(); onLogout(); toast('已退出'); }
 
-// === 加载个人游戏记录 ===
-// 缓存拉取的全量数据，用于「加载更多」展开
+// === 个人游戏记录 ===
 let _myRecordsCache = null;
-
 async function loadMyRecords() {
   const recentEl = document.getElementById('meRecentScores');
   const bestEl = document.getElementById('meBestScores');
@@ -566,22 +852,17 @@ async function loadMyRecords() {
       })
     );
 
-    // --- 近期记录：按时间倒序 ---
     let recentAll = [];
     results.forEach(({ game, items }) => {
       items.forEach(it => {
         recentAll.push({
-          gameName: game.name,
-          gameId: game.id,
-          score: it.score,
-          meta: it.meta,
-          created_at: it.created_at,
+          gameName: game.name, gameId: game.id, score: it.score,
+          meta: it.meta, created_at: it.created_at,
         });
       });
     });
     recentAll.sort((a, b) => b.created_at - a.created_at);
 
-    // --- 个人最强记录：每个游戏取最高分 ---
     let bestList = [];
     results.forEach(({ game, items }) => {
       if (!items.length) return;
@@ -610,30 +891,20 @@ async function loadMyRecords() {
     });
 
     _myRecordsCache = { recentAll, bestList };
-
-    // 默认展示前5条
     renderRecentScores(recentEl, 5);
     renderBestScores(bestEl, 5);
-
   } catch (e) {
     recentEl.innerHTML = '<div class="me-record-empty">加载失败，请稍后重试</div>';
     bestEl.innerHTML = '<div class="me-record-empty">加载失败，请稍后重试</div>';
   }
 }
-
-// 渲染近期记录，limit 条数
 function renderRecentScores(el, limit) {
   if (!_myRecordsCache) return;
   const { recentAll } = _myRecordsCache;
   const items = recentAll.slice(0, limit);
-
-  if (!items.length) {
-    el.innerHTML = '<div class="me-record-empty">暂无游戏记录，快去玩一局吧</div>';
-    return;
-  }
+  if (!items.length) { el.innerHTML = '<div class="me-record-empty">暂无游戏记录，快去玩一局吧</div>'; return; }
   let html = items.map(r => {
-    let diffLabel = '';
-    let diffKey = null;
+    let diffLabel = '', diffKey = null;
     try {
       const m = typeof r.meta === 'string' ? JSON.parse(r.meta) : (r.meta || {});
       if (m.difficulty) {
@@ -649,23 +920,16 @@ function renderRecentScores(el, limit) {
       <span class="me-record-time">${time}</span>
     </div>`;
   }).join('');
-
   if (recentAll.length > 5) {
     html += '<div class="me-record-more"><button onclick="renderRecentScores(document.getElementById(\'meRecentScores\'), ' + (limit === 5 ? 10 : 5) + ')">' + (limit === 5 ? '查看更多' : '收起') + '</button></div>';
   }
   el.innerHTML = html;
 }
-
-// 渲染最强记录，limit 条数
 function renderBestScores(el, limit) {
   if (!_myRecordsCache) return;
   const { bestList } = _myRecordsCache;
   const items = bestList.slice(0, limit);
-
-  if (!items.length) {
-    el.innerHTML = '<div class="me-record-empty">暂无记录</div>';
-    return;
-  }
+  if (!items.length) { el.innerHTML = '<div class="me-record-empty">暂无记录</div>'; return; }
   let html = items.map(b => {
     const diffLabel = b.difficulty ? ' · ' + b.difficulty : '';
     const diffKey = b.difficulty ? { '简': 'easy', '中': 'medium', '难': 'hard' }[b.difficulty] || null : null;
@@ -674,7 +938,6 @@ function renderBestScores(el, limit) {
       <span class="me-record-score">${fmtLeaderScore(b.gameId, diffKey, b.score)}</span>
     </div>`;
   }).join('');
-
   if (bestList.length > 5) {
     html += '<div class="me-record-more"><button onclick="renderBestScores(document.getElementById(\'meBestScores\'), ' + (limit === 5 ? 10 : 5) + ')">' + (limit === 5 ? '查看更多' : '收起') + '</button></div>';
   }
@@ -711,12 +974,10 @@ async function submitAuth() {
         const url = await GP.uploadAvatar(file);
         user = await GP.updateProfile({ avatar_url: url });
       } catch (e) {
-        // 头像失败不影响账号；额度满时给出提示
         if (e.message === 'quota_exceeded') msg.textContent = '本月头像上传额度已满，已为你完成注册，可稍后再试';
       }
     }
     onLogin(user);
-    // 登录后带回游戏（自动带上 token 实现 SSO）
     const redirect = new URLSearchParams(location.search).get('redirect');
     if (redirect) {
       try {
@@ -729,7 +990,6 @@ async function submitAuth() {
     }
     closeModal('authModal');
     toast(authTab === 'register' ? '注册成功 🎉' : '登录成功');
-    // 执行挂起的登录后操作
     if (_pendingLoginAction) { const act = _pendingLoginAction; _pendingLoginAction = null; act(); }
   } catch (e) { msg.textContent = mapErr(e.message); }
 }
@@ -762,7 +1022,6 @@ async function submitProfile() {
   } catch (e) { msg.textContent = mapErr(e.message); }
 }
 
-// 点击遮罩关闭
 document.querySelectorAll('.modal').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.add('hidden'); });
 });
