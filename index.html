@@ -501,6 +501,8 @@ async function boot() {
     openModal('authModal');
   }
   loadBests();
+  // 页面加载即初始化天梯榜 tab 的游戏列表/迷你列表等结构（无需登录）
+  initLeaderboardTab();
 }
 
 // === 从 API 加载游戏列表（优先数据库，降级静态配置）===
@@ -781,8 +783,8 @@ function startBestFlip(gameId, count) {
 
 // === Tab 切换 ===
 function switchTab(tab) {
-  // 所有 tab 切换均需登录
-  if (!GP.getToken()) {
+  // 「我的」tab 需要登录
+  if (tab === 'me' && !GP.getToken()) {
     openModal('authModal');
     return;
   }
@@ -869,9 +871,11 @@ function initLeaderboardTab() {
   renderIndexBar();
   renderMiniList();
 
-  // 默认选中第一个非 skip 游戏
-  const first = _lbGames.find(g => !g.skip);
-  if (first) selectLBGame(first.id);
+  // 默认选中第一个非 skip 游戏（仅登录时自动展示天梯榜）
+  if (GP.getToken()) {
+    const first = _lbGames.find(g => !g.skip && g.enabled !== false);
+    if (first) selectLBGame(first.id);
+  }
 }
 
 function renderMiniList() {
