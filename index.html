@@ -1069,6 +1069,18 @@ async function renderLeaderboardContent(g) {
     prevExpanded[el.id] = !el.classList.contains('lb-diff-collapsed');
   });
 
+  // 保存滚动锚点：当前视口内第一个可见的分类标题索引
+  let anchorIndex = 0;
+  const contentWrap = document.getElementById('lbContentWrap');
+  if (contentWrap) {
+    const wrapTop = contentWrap.getBoundingClientRect().top;
+    const titles = content.querySelectorAll('.lb-diff-title');
+    for (let i = 0; i < titles.length; i++) {
+      const r = titles[i].getBoundingClientRect();
+      if (r.top >= wrapTop - 10) { anchorIndex = i; break; }
+    }
+  }
+
   try {
     if (g.diffs && g.diffs.length) {
       // 多难度游戏（或多子测试分类：human-bench）
@@ -1113,7 +1125,7 @@ async function renderLeaderboardContent(g) {
         return html;
       }).join('');
 
-      // 恢复折叠/展开状态（轮询刷新时保持用户选择）
+      // 恢复折叠/展开状态 + 滚动锚点（轮询刷新时保持用户选择）
       requestAnimationFrame(() => {
         results.forEach((_, ri) => {
           const groupId = 'lb-group-' + ri;
@@ -1130,6 +1142,11 @@ async function renderLeaderboardContent(g) {
             g.classList.add('lb-show-' + showCount);
           }
         });
+        // 恢复滚动锚点
+        const titles = content.querySelectorAll('.lb-diff-title');
+        if (titles[anchorIndex]) {
+          titles[anchorIndex].scrollIntoView({ block: 'start' });
+        }
       });
     } else {
       // 单难度游戏（不过滤同用户，显示所有上分成绩）
