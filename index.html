@@ -901,6 +901,7 @@ function renderIndexBar() {
   // 非 skip 且非 disabled 的游戏数 ≤ 6 时不显示索引栏
   const activeCount = _lbGames.filter(g => !g.skip && g.enabled !== false).length;
   if (activeCount <= 6) { bar.style.display = 'none'; return; }
+  const letters = _lbGroups.map(g => g.letter);
   bar.style.display = '';
   bar.innerHTML = letters.map(l =>
     `<div class="lb-index-dot" data-letter="${l}" 
