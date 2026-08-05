@@ -1081,9 +1081,8 @@ async function renderLeaderboardContent(g) {
       // 动态决定每个分类显示条数：分类多则少显示，确保一屏可见所有分类第一名
       const groupCount = results.length;
       let showCount;
-      if (groupCount <= 3) showCount = 5;
-      else if (groupCount <= 5) showCount = 3;
-      else showCount = 2;
+      if (groupCount < 3) showCount = 5;
+      else showCount = 3;
 
       content.innerHTML = `<h2>🏆 ${esc(g.name)} 天梯榜</h2>` + results.map((r, ri) => {
         let items = r.items || [];
