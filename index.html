@@ -267,9 +267,13 @@
   }
   .lb-diff-title:first-child { margin-top: 0; padding-top: 2px; }
   .lb-diff-toggle { font-size: 11px; color: #999; transition: transform .2s; }
-  /* 折叠状态：只显示前 3 条 */
+  /* 折叠状态：默认只显示前 N 条（默认 3，JS 可通过 .lb-show-5 等覆盖） */
   .lb-diff-collapsed .lb-item:nth-child(n+4) { display: none; }
   .lb-diff-collapsed .lb-more-btn { display: block; }
+  .lb-diff-collapsed.lb-show-2 .lb-item:nth-child(n+3) { display: none; }
+  .lb-diff-collapsed.lb-show-2 .lb-more-btn { display: block; }
+  .lb-diff-collapsed.lb-show-5 .lb-item:nth-child(n+6) { display: none; }
+  .lb-diff-collapsed.lb-show-5 .lb-more-btn { display: block; }
   .lb-more-btn { display: none; text-align: center; padding: 6px;
     color: #4472c4; font-size: 12px; cursor: pointer; }
   .lb-item {
@@ -1078,7 +1082,13 @@ async function renderLeaderboardContent(g) {
       const hasAny = results.some(r => r.items && r.items.length > 0);
       if (!hasAny) { content.innerHTML = '<div class="lb-empty">暂无记录，快来抢榜首！</div>'; return; }
 
-      // 每个细分类默认只显示前 3 条，确保一屏可见所有分类第一名
+      // 动态决定每个分类显示条数：分类多则少显示，确保一屏可见所有分类第一名
+      const groupCount = results.length;
+      let showCount;
+      if (groupCount <= 3) showCount = 5;
+      else if (groupCount <= 5) showCount = 3;
+      else showCount = 2;
+
       content.innerHTML = `<h2>🏆 ${esc(g.name)} 天梯榜</h2>` + results.map((r, ri) => {
         let items = r.items || [];
         // human-bench 的 reaction/aim_trainer 越小越好，前端反转排序
@@ -1093,15 +1103,25 @@ async function renderLeaderboardContent(g) {
         if (!items.length) {
           html += '<div class="lb-empty">暂无记录</div>';
         } else {
+          // 渲染所有 items，前端 CSS 折叠时只显示前 N 条
           html += items.map((it, i) => renderLBItem(i, it, g.id, r.key)).join('');
         }
-        // 超过 3 条时显示「展开全部」按钮
-        if (items.length > 3) {
+        // 超过 showCount 条时显示「展开全部」按钮
+        if (items.length > showCount) {
           html += `<div class="lb-more-btn" onclick="toggleLBGroup('${groupId}', this.parentElement.previousElementSibling)">展开全部 (${items.length})</div>`;
         }
         html += '</div>';
-        // 默认折叠，只显示前 3 条
-        html += `<script>setTimeout(function(){var g=document.getElementById('${groupId}');if(g){g.classList.add('lb-diff-collapsed');g.previousElementSibling.querySelector('.lb-diff-toggle').style.transform='rotate(-90deg)';}},0)<\/script>`;
+        // 默认折叠，只显示前 showCount 条
+        html += `<script>setTimeout(function(){
+          var g=document.getElementById('${groupId}');
+          if(g){
+            g.classList.add('lb-diff-collapsed');
+            g.classList.add('lb-show-${showCount}');
+            g.dataset.showCount='${showCount}';
+            var t=g.previousElementSibling.querySelector('.lb-diff-toggle');
+            if(t) t.style.transform='rotate(-90deg)';
+          }
+        },0)<\/script>`;
         return html;
       }).join('');
     } else {
