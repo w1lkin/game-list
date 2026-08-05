@@ -193,7 +193,6 @@
   /* === 天梯榜 Tab === */
   .lb-layout {
     display: flex; height: calc(100vh - 140px); overflow: hidden; position: relative;
-    padding-top: 50px;
   }
   .lb-sidebar-wrap {
     position: relative; flex-shrink: 0; background: #fff; border-right: 1px solid var(--line);
@@ -1053,15 +1052,18 @@ async function renderLeaderboardContent(g) {
     prevExpanded[el.id] = !el.classList.contains('lb-diff-collapsed');
   });
 
-  // 保存滚动锚点：当前视口内第一个可见的分类标题索引
+  // 保存滚动锚点：当前视口内第一个可见的分类标题索引（仅在已有内容时记录）
+  const isFirstRender = content.querySelector('.lb-diff-title') === null;
   let anchorIndex = 0;
-  const contentWrap = document.getElementById('lbContentWrap');
-  if (contentWrap) {
-    const wrapTop = contentWrap.getBoundingClientRect().top;
-    const titles = content.querySelectorAll('.lb-diff-title');
-    for (let i = 0; i < titles.length; i++) {
-      const r = titles[i].getBoundingClientRect();
-      if (r.top >= wrapTop - 10) { anchorIndex = i; break; }
+  if (!isFirstRender) {
+    const contentWrap = document.getElementById('lbContentWrap');
+    if (contentWrap) {
+      const wrapTop = contentWrap.getBoundingClientRect().top;
+      const titles = content.querySelectorAll('.lb-diff-title');
+      for (let i = 0; i < titles.length; i++) {
+        const r = titles[i].getBoundingClientRect();
+        if (r.top >= wrapTop - 10) { anchorIndex = i; break; }
+      }
     }
   }
 
@@ -1109,6 +1111,7 @@ async function renderLeaderboardContent(g) {
       }).join('');
 
       // 恢复折叠/展开状态 + 滚动锚点（轮询刷新时保持用户选择）
+      const hasPrev = Object.keys(prevExpanded).length > 0;
       requestAnimationFrame(() => {
         results.forEach((_, ri) => {
           const groupId = 'lb-group-' + ri;
@@ -1125,10 +1128,12 @@ async function renderLeaderboardContent(g) {
             g.classList.add('lb-show-' + showCount);
           }
         });
-        // 恢复滚动锚点
-        const titles = content.querySelectorAll('.lb-diff-title');
-        if (titles[anchorIndex]) {
-          titles[anchorIndex].scrollIntoView({ block: 'start' });
+        // 恢复滚动锚点（仅在之前已渲染过该游戏榜单时）
+        if (hasPrev) {
+          const titles = content.querySelectorAll('.lb-diff-title');
+          if (titles[anchorIndex]) {
+            titles[anchorIndex].scrollIntoView({ block: 'start' });
+          }
         }
       });
     } else {
