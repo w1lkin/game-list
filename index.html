@@ -192,23 +192,40 @@
 
   /* === 天梯榜 Tab === */
   .lb-layout {
-    display: flex; height: calc(100vh - 120px); /* 减去 topbar + tabbar */
-    overflow: hidden;
+    display: flex; height: calc(100vh - 120px); overflow: hidden; position: relative;
   }
+  .lb-sidebar-wrap {
+    position: relative; flex-shrink: 0; background: #fff; border-right: 1px solid var(--line);
+    transition: width .25s ease; width: 130px; overflow: hidden;
+  }
+  .lb-sidebar-wrap.collapsed { width: 0; border-right: none; }
+  .lb-sidebar-inner { width: 130px; height: 100%; display: flex; flex-direction: column; }
   .lb-sidebar {
-    width: 130px; flex-shrink: 0; overflow-y: auto; background: #fff;
-    border-right: 1px solid var(--line);
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
   }
+  .lb-sidebar::-webkit-scrollbar { display: none; }
   .lb-sidebar-item {
-    padding: 14px 12px; font-size: 14px; cursor: pointer; color: var(--text);
+    padding: 12px 10px; font-size: 13px; cursor: pointer; color: var(--text);
     border-bottom: 1px solid var(--line); transition: background .15s;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 130px;
   }
   .lb-sidebar-item:active { background: #fafafa; }
   .lb-sidebar-item.active { color: var(--primary); font-weight: 700; background: #f0faf3; }
-  .lb-sidebar-item .lb-skip-badge { font-size: 10px; color: var(--sub); display: block; }
+  .lb-sidebar-item .lb-skip-badge { font-size: 10px; color: var(--sub); }
+  /* 侧边栏折叠/展开把手 */
+  .lb-sidebar-toggle {
+    position: absolute; right: -16px; top: 50%; transform: translateY(-50%);
+    width: 16px; height: 48px; background: #fff; border: 1px solid var(--line);
+    border-left: none; border-radius: 0 8px 8px 0; cursor: pointer; z-index: 5;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: var(--sub); transition: right .25s ease;
+    box-shadow: 1px 0 4px rgba(0,0,0,.04);
+  }
+  .lb-sidebar-wrap.collapsed .lb-sidebar-toggle { right: -16px; }
   .lb-content {
-    flex: 1; overflow-y: auto; padding: 14px;
+    flex: 1; overflow-y: auto; padding: 14px 14px 14px 18px; position: relative;
   }
   .lb-content h2 { font-size: 16px; margin: 0 0 12px; color: var(--text); }
   .lb-diff-title {
@@ -230,6 +247,34 @@
   .lb-placeholder {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     height: 100%; color: var(--sub); font-size: 14px;
+  }
+  /* A-Z 快速定位索引栏 */
+  .lb-index-bar {
+    position: absolute; right: 4px; top: 0; bottom: 0;
+    display: flex; flex-direction: column; justify-content: center; gap: 1px;
+    z-index: 10; padding: 4px 0;
+  }
+  .lb-index-dot {
+    width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
+    font-size: 9px; color: var(--sub); cursor: pointer; border-radius: 50%;
+    font-weight: 600; user-select: none; -webkit-user-select: none;
+    transition: color .15s, background .15s;
+  }
+  .lb-index-dot:active, .lb-index-dot:hover { color: var(--primary); background: #f0faf3; }
+  /* 字母索引 tooltip */
+  .lb-index-tip {
+    position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    background: rgba(0,0,0,.75); color: #fff; font-size: 32px; font-weight: 700;
+    width: 56px; height: 56px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; z-index: 100;
+    pointer-events: none; opacity: 0; transition: opacity .1s;
+  }
+  .lb-index-tip.show { opacity: 1; }
+  /* 侧边栏内分组字母标记 */
+  .lb-group-header {
+    padding: 6px 10px; font-size: 11px; font-weight: 700; color: var(--sub);
+    background: #fafafa; border-bottom: 1px solid var(--line);
+    letter-spacing: 1px; max-width: 130px;
   }
 </style>
 </head>
@@ -254,10 +299,17 @@
 <!-- 天梯榜页 -->
 <section id="pageLeaderboard" class="page">
   <div class="lb-layout">
-    <div class="lb-sidebar" id="lbSidebar"></div>
-    <div class="lb-content" id="lbContent">
-      <div class="lb-placeholder">← 选择一个游戏查看天梯榜</div>
+    <div class="lb-sidebar-wrap" id="lbSidebarWrap">
+      <div class="lb-sidebar-inner">
+        <div class="lb-sidebar" id="lbSidebar"></div>
+      </div>
+      <div class="lb-sidebar-toggle" id="lbSidebarToggle" onclick="toggleSidebar()" title="折叠/展开">◀</div>
     </div>
+    <div class="lb-content" id="lbContent" style="position:relative">
+      <div class="lb-placeholder">← 选择一个游戏查看天梯榜</div>
+      <div class="lb-index-bar" id="lbIndexBar"></div>
+    </div>
+    <div class="lb-index-tip" id="lbIndexTip"></div>
   </div>
 </section>
 
@@ -704,6 +756,20 @@ function switchTab(tab) {
 // === 天梯榜 Tab ===
 let _lbGames = [];
 let _lbSelectedGame = null;
+let _lbGroups = []; // { letter, gameIds[] }
+
+// 拼音首字母映射（仅需覆盖游戏名首字）
+const _PINYIN = {
+  '翻': 'F', '贪': 'T', '扫': 'S', '俄': 'E', '中': 'Z',
+  '人': 'R', '替': 'T', '掷': 'Z', '人': 'R',
+};
+
+function toggleSidebar() {
+  const wrap = document.getElementById('lbSidebarWrap');
+  const toggle = document.getElementById('lbSidebarToggle');
+  const isCollapsed = wrap.classList.toggle('collapsed');
+  toggle.innerHTML = isCollapsed ? '▶' : '◀';
+}
 
 function initLeaderboardTab() {
   const sidebar = document.getElementById('lbSidebar');
@@ -719,15 +785,88 @@ function initLeaderboardTab() {
     return a.name.localeCompare(b.name, 'zh-CN');
   });
 
-  sidebar.innerHTML = _lbGames.map(g =>
-    `<div class="lb-sidebar-item${g.skip ? ' lb-skip-item' : ''}" data-game="${g.id}" onclick="selectLBGame('${g.id}')">
-      ${esc(g.name)}${g.skip ? '<span class="lb-skip-badge">娱乐向</span>' : ''}
-    </div>`
+  // 按拼音首字母分组
+  const groupMap = new Map();
+  _lbGames.forEach(g => {
+    if (g.skip) return;
+    const first = g.name.charAt(0);
+    let letter = _PINYIN[first] || (/[a-zA-Z]/.test(first) ? first.toUpperCase() : '#');
+    if (!groupMap.has(letter)) groupMap.set(letter, []);
+    groupMap.get(letter).push(g.id);
+  });
+  _lbGroups = Array.from(groupMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([letter, gameIds]) => ({ letter, gameIds }));
+
+  // 渲染侧边栏（带分组标题）
+  sidebar.innerHTML = _lbGroups.map(grp =>
+    `<div class="lb-group-header" data-group="${grp.letter}">${grp.letter}</div>` +
+    grp.gameIds.map(id => {
+      const g = findGame(id);
+      if (!g) return '';
+      return `<div class="lb-sidebar-item" data-game="${g.id}" onclick="selectLBGame('${g.id}')">${esc(g.name)}</div>`;
+    }).join('')
   ).join('');
+
+  // 渲染 skip 游戏
+  const skipGames = _lbGames.filter(g => g.skip);
+  if (skipGames.length > 0) {
+    sidebar.innerHTML += skipGames.map(g =>
+      `<div class="lb-sidebar-item lb-skip-item" data-game="${g.id}" onclick="selectLBGame('${g.id}')">
+        ${esc(g.name)}<span class="lb-skip-badge">娱乐向</span>
+      </div>`
+    ).join('');
+  }
+
+  renderIndexBar();
 
   // 默认选中第一个非 skip 游戏
   const first = _lbGames.find(g => !g.skip);
   if (first) selectLBGame(first.id);
+}
+
+function renderIndexBar() {
+  const bar = document.getElementById('lbIndexBar');
+  if (!bar) return;
+  const letters = _lbGroups.map(g => g.letter);
+  if (letters.length <= 1) { bar.style.display = 'none'; return; }
+  bar.style.display = '';
+  bar.innerHTML = letters.map(l =>
+    `<div class="lb-index-dot" data-letter="${l}" 
+          onpointerdown="scrollToGroup('${l}')" 
+          ontouchstart="scrollToGroup('${l}');event.preventDefault()">${l}</div>`
+  ).join('');
+
+  let tipTimer = null;
+  const tip = document.getElementById('lbIndexTip');
+
+  function showTip(letter) {
+    tip.textContent = letter;
+    tip.classList.add('show');
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(() => tip.classList.remove('show'), 800);
+  }
+
+  function getGroupOffset(letter) {
+    const header = document.querySelector(`.lb-group-header[data-group="${letter}"]`);
+    if (!header) return 0;
+    const sidebar = document.getElementById('lbSidebar');
+    return header.offsetTop - sidebar.offsetTop;
+  }
+
+  window.scrollToGroup = function(letter) {
+    const sidebar = document.getElementById('lbSidebar');
+    const offset = getGroupOffset(letter);
+    sidebar.scrollTo({ top: offset, behavior: 'smooth' });
+    showTip(letter);
+  };
+
+  // 支持手指在索引栏上滑动连续切换
+  bar.addEventListener('pointermove', (e) => {
+    if (e.buttons !== 1) return; // 只在按住时响应
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    if (el && el.dataset.letter) scrollToGroup(el.dataset.letter);
+  });
 }
 
 function selectLBGame(gameId) {
