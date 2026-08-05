@@ -267,13 +267,11 @@
   }
   .lb-diff-title:first-child { margin-top: 0; padding-top: 2px; }
   .lb-diff-toggle { font-size: 11px; color: #999; transition: transform .2s; }
-  /* 折叠状态：默认只显示前 N 条（默认 3，JS 可通过 .lb-show-5 等覆盖） */
-  .lb-diff-collapsed .lb-item:nth-child(n+4) { display: none; }
+  /* 折叠状态：只显示前 N 条（由 data-show-count 决定） */
   .lb-diff-collapsed .lb-more-btn { display: block; }
-  .lb-diff-collapsed.lb-show-2 .lb-item:nth-child(n+3) { display: none; }
-  .lb-diff-collapsed.lb-show-2 .lb-more-btn { display: block; }
-  .lb-diff-collapsed.lb-show-5 .lb-item:nth-child(n+6) { display: none; }
-  .lb-diff-collapsed.lb-show-5 .lb-more-btn { display: block; }
+  .lb-diff-collapsed[data-show-count="2"] .lb-item:nth-child(n+3) { display: none; }
+  .lb-diff-collapsed[data-show-count="3"] .lb-item:nth-child(n+4) { display: none; }
+  .lb-diff-collapsed[data-show-count="5"] .lb-item:nth-child(n+6) { display: none; }
   .lb-more-btn { display: none; text-align: center; padding: 6px;
     color: #4472c4; font-size: 12px; cursor: pointer; }
   .lb-item {
@@ -1103,27 +1101,27 @@ async function renderLeaderboardContent(g) {
         if (!items.length) {
           html += '<div class="lb-empty">暂无记录</div>';
         } else {
-          // 渲染所有 items，前端 CSS 折叠时只显示前 N 条
           html += items.map((it, i) => renderLBItem(i, it, g.id, r.key)).join('');
         }
-        // 超过 showCount 条时显示「展开全部」按钮
         if (items.length > showCount) {
           html += `<div class="lb-more-btn" onclick="toggleLBGroup('${groupId}', this.parentElement.previousElementSibling)">展开全部 (${items.length})</div>`;
         }
         html += '</div>';
-        // 默认折叠，只显示前 showCount 条
-        html += `<script>setTimeout(function(){
-          var g=document.getElementById('${groupId}');
-          if(g){
-            g.classList.add('lb-diff-collapsed');
-            g.classList.add('lb-show-${showCount}');
-            g.dataset.showCount='${showCount}';
-            var t=g.previousElementSibling.querySelector('.lb-diff-toggle');
-            if(t) t.style.transform='rotate(-90deg)';
-          }
-        },0)<\/script>`;
         return html;
       }).join('');
+
+      // innerHTML 不会执行内嵌 script，所以直接操作 DOM 折叠
+      requestAnimationFrame(() => {
+        results.forEach((_, ri) => {
+          const g = document.getElementById('lb-group-' + ri);
+          if (!g) return;
+          g.classList.add('lb-diff-collapsed');
+          g.classList.add('lb-show-' + showCount);
+          g.dataset.showCount = String(showCount);
+          const t = g.previousElementSibling && g.previousElementSibling.querySelector('.lb-diff-toggle');
+          if (t) t.style.transform = 'rotate(-90deg)';
+        });
+      });
     } else {
       // 单难度游戏（不过滤同用户，显示所有上分成绩）
       const items = await GP.getLeaderboard(g.id, 10, null, null, null, false);
