@@ -884,8 +884,9 @@ function updateMiniActive(gameId) {
 function renderIndexBar() {
   const bar = document.getElementById('lbIndexBar');
   if (!bar) return;
-  const letters = _lbGroups.map(g => g.letter);
-  if (letters.length <= 1) { bar.style.display = 'none'; return; }
+  // 非 skip 且非 disabled 的游戏数 ≤ 6 时不显示索引栏
+  const activeCount = _lbGames.filter(g => !g.skip && g.enabled !== false).length;
+  if (activeCount <= 6) { bar.style.display = 'none'; return; }
   bar.style.display = '';
   bar.innerHTML = letters.map(l =>
     `<div class="lb-index-dot" data-letter="${l}" 
