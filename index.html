@@ -221,15 +221,15 @@
   .lb-sidebar-toggle:active { background: #f0f0f0; }
   .lb-mini-list {
     display: none; flex-direction: column; flex: 1; overflow-y: auto;
-    padding: 6px 0; scrollbar-width: none; gap: 4px;
+    padding: 6px 0; scrollbar-width: none; gap: 6px;
   }
   .lb-mini-list::-webkit-scrollbar { display: none; }
   .lb-sidebar-wrap.collapsed .lb-mini-list { display: flex; }
   .lb-mini-item {
-    width: 36px; height: 36px; display: flex; align-items: center;
+    width: 28px; height: 28px; display: flex; align-items: center;
     justify-content: center; font-size: 12px; font-weight: 700;
     color: var(--sub); cursor: pointer; transition: color .15s, background .15s;
-    border-radius: 8px; margin: 0 auto; flex-shrink: 0;
+    border-radius: 6px; margin: 0 auto; flex-shrink: 0;
     background: #fafafa;
   }
   .lb-mini-item:active, .lb-mini-item.active { color: var(--primary); background: #e8f5e9; }
@@ -498,7 +498,7 @@ async function boot() {
     GP.getUser().then(u => u ? onLogin(u) : onLogout()).catch(onLogout);
   } else {
     onLogout();
-    // 不强制弹登录：让用户先浏览游戏和天梯榜，跳转游戏时再要求登录
+    openModal('authModal');
   }
   loadBests();
 }
