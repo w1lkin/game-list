@@ -522,6 +522,24 @@ async function boot() {
   loadBests();
   // 页面加载即初始化天梯榜 tab 的游戏列表/迷你列表等结构（无需登录）
   initLeaderboardTab();
+
+  // 支持 ?tab=leaderboard&game=xxx 直接打开对应天梯榜
+  const params = new URLSearchParams(location.search);
+  if (params.get('tab') === 'leaderboard') {
+    switchTab('leaderboard');
+    const gameId = params.get('game');
+    if (gameId) {
+      // 等待天梯榜初始化完成后再选中游戏
+      const waitAndSelect = (retries) => {
+        if (_lbGames.length > 0) {
+          selectLBGame(gameId);
+        } else if (retries > 0) {
+          setTimeout(() => waitAndSelect(retries - 1), 200);
+        }
+      };
+      waitAndSelect(10);
+    }
+  }
 }
 
 // === 从 API 加载游戏列表（优先数据库，降级静态配置）===
