@@ -203,9 +203,9 @@
     width: 36px; border-right: 1px solid var(--line);
   }
   .lb-sidebar-header {
-    display: flex; align-items: center; justify-content: center;
-    padding: 6px 4px; border-bottom: 1px solid var(--line); flex-shrink: 0;
-    height: 38px; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 8px; border-bottom: 1px solid var(--line); flex-shrink: 0;
+    height: 36px; box-sizing: border-box;
   }
   .lb-sidebar-header-label {
     font-size: 12px; font-weight: 700; color: var(--sub); overflow: hidden;
@@ -213,12 +213,12 @@
   }
   .lb-sidebar-wrap.collapsed .lb-sidebar-header-label { display: none; }
   .lb-sidebar-toggle {
-    width: 26px; height: 26px; border: 1.5px solid #bbb; background: #f5f5f5;
-    border-radius: 50%; cursor: pointer; display: flex; align-items: center;
-    justify-content: center; font-size: 13px; color: #444;
+    width: 24px; height: 24px; border: 1px solid var(--line); background: #fff;
+    border-radius: 6px; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 12px; color: #666;
     flex-shrink: 0; transition: background .15s; line-height: 1;
   }
-  .lb-sidebar-toggle:active { background: #e0e0e0; }
+  .lb-sidebar-toggle:active { background: #f0f0f0; }
   .lb-mini-list {
     display: none; flex-direction: column; flex: 1; overflow-y: auto;
     padding: 4px 0; scrollbar-width: none;
