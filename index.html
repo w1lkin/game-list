@@ -213,12 +213,12 @@
   }
   .lb-sidebar-wrap.collapsed .lb-sidebar-header-label { opacity: 0; }
   .lb-sidebar-toggle {
-    width: 22px; height: 22px; border: none; background: #f0f0f0;
+    width: 24px; height: 24px; border: 1px solid var(--line); background: #fff;
     border-radius: 6px; cursor: pointer; display: flex; align-items: center;
-    justify-content: center; font-size: 11px; color: var(--sub);
+    justify-content: center; font-size: 12px; color: #666;
     flex-shrink: 0; transition: background .15s; line-height: 1;
   }
-  .lb-sidebar-toggle:active { background: #e0e0e0; }
+  .lb-sidebar-toggle:active { background: #f0f0f0; }
   .lb-sidebar-inner {
     flex: 1; overflow: hidden; display: flex; flex-direction: column;
     transition: opacity .15s;
@@ -238,16 +238,6 @@
   .lb-sidebar-item:active { background: #fafafa; }
   .lb-sidebar-item.active { color: var(--primary); font-weight: 700; background: #f0faf3; }
   .lb-sidebar-item .lb-skip-badge { font-size: 10px; color: var(--sub); }
-  /* 侧边栏折叠/展开把手 */
-  .lb-sidebar-toggle {
-    position: absolute; right: -16px; top: 50%; transform: translateY(-50%);
-    width: 16px; height: 48px; background: #fff; border: 1px solid var(--line);
-    border-left: none; border-radius: 0 8px 8px 0; cursor: pointer; z-index: 5;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 10px; color: var(--sub); transition: right .25s ease;
-    box-shadow: 1px 0 4px rgba(0,0,0,.04);
-  }
-  .lb-sidebar-wrap.collapsed .lb-sidebar-toggle { right: -16px; }
   .lb-content-wrap {
     flex: 1; position: relative; display: flex; min-width: 0;
   }
