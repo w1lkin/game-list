@@ -1045,6 +1045,13 @@ function onLogout() {
   document.getElementById('meLoggedActions').style.display = 'none';
   document.getElementById('meRecords').style.display = 'none';
   document.getElementById('quickSection').style.display = 'none';
+  // 退出登录后强制切回主页
+  document.getElementById('pageGames').classList.add('active');
+  document.getElementById('pageLeaderboard').classList.remove('active');
+  document.getElementById('pageMe').classList.remove('active');
+  document.getElementById('tabGames').classList.add('active');
+  document.getElementById('tabLeaderboard').classList.remove('active');
+  document.getElementById('tabMe').classList.remove('active');
 }
 function doLogout() { GP.logout(); onLogout(); toast('已退出'); }
 
