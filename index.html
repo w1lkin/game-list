@@ -52,6 +52,10 @@
   .btn[disabled] { opacity: .5; transform: none; }
 
   main { padding: 8px 14px; }
+  .page-container {
+    position: relative;
+    min-height: calc(100vh - 140px);
+  }
   .cat-title { font-size: 15px; font-weight: 700; margin: 18px 4px 10px; color: var(--text); letter-spacing: -0.01em; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .card {
@@ -165,8 +169,17 @@
   .tabbar button:active { transform: scale(0.95); }
   .tabbar button .tab-ico { font-size: 20px; line-height: 1; }
   .tabbar button.active { color: var(--primary); font-weight: 600; }
-  .page { display: none; }
-  .page.active { display: block; }
+  .page {
+    position: absolute; inset: 0;
+    opacity: 0; transform: translateY(4px);
+    pointer-events: none;
+    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+  }
+  .page.active {
+    opacity: 1; transform: translateY(0);
+    pointer-events: auto;
+    position: relative;
+  }
 
   /* === 主页快捷入口 === */
   .quick-bar {
@@ -185,6 +198,18 @@
   .quick-name { font-size: 15px; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .quick-sub { font-size: 11px; color: var(--sub); margin-top: 2px; }
   .quick-empty { text-align: center; color: var(--sub); font-size: 13px; padding: 10px 0; }
+
+  /* Quick section entrance */
+  #quickSection {
+    overflow: hidden;
+    transition: opacity 250ms var(--ease-out), max-height 400ms var(--ease-out);
+  }
+  #quickSection:not(.visible) {
+    opacity: 0; max-height: 0;
+  }
+  #quickSection.visible {
+    opacity: 1; max-height: 300px;
+  }
 
   /* === 我的页 === */
   .me-profile {
@@ -215,6 +240,15 @@
   .me-record-score { color: var(--primary-d); font-weight: 700; white-space: nowrap; }
   .me-record-time { font-size: 11px; color: var(--sub); white-space: nowrap; }
   .me-record-empty { text-align: center; color: var(--sub); font-size: 13px; padding: 12px 0; }
+
+  /* Record item stagger entrance */
+  .me-record-item--enter {
+    opacity: 0; transform: translateY(8px);
+    animation: recItemIn 250ms var(--ease-out) forwards;
+  }
+  @keyframes recItemIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
   .me-record-more {
     text-align: center; padding: 8px 0 0;
   }
@@ -335,8 +369,18 @@
   .lb-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #e0e0e0; border: 1px solid #fff; flex-shrink: 0; }
   .lb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .lb-score { color: #2e7d32; font-weight: 600; white-space: nowrap; }
-  .lb-empty { text-align: center; color: var(--sub); font-size: 14px; padding: 30px 0; }
-  .lb-loading { text-align: center; color: var(--sub); font-size: 14px; padding: 30px 0; }
+  .lb-empty { text-align: center; color: var(--sub); font-size: 14px; padding: 30px 0; animation: fadeIn 200ms var(--ease-out) both; }
+  .lb-loading { text-align: center; color: var(--sub); font-size: 14px; padding: 30px 0; animation: fadeIn 200ms var(--ease-out) both; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Leaderboard item stagger entrance */
+  .lb-item--enter {
+    opacity: 0; transform: translateY(6px);
+    animation: lbItemIn 200ms var(--ease-out) forwards;
+  }
+  @keyframes lbItemIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
   .lb-placeholder {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     height: 100%; color: var(--sub); font-size: 14px;
@@ -382,6 +426,9 @@
     .modal { transition: opacity 0.01ms !important; }
     .sheet { transition: opacity 200ms ease !important; transform: none !important; }
     .modal.hidden .sheet { transform: none !important; }
+    .page { transition: opacity 0.01ms !important; transform: none !important; }
+    .lb-item--enter, .me-record-item--enter { animation: none !important; opacity: 1 !important; transform: none !important; }
+    #quickSection { transition: opacity 0.01ms !important; max-height: none !important; }
   }
 
   @media (prefers-reduced-transparency: reduce) {
@@ -418,11 +465,12 @@
   <div class="brand">🎮 小游戏</div>
 </header>
 
+<div class="page-container">
 <!-- 游戏页 -->
 <section id="pageGames" class="page active">
   <main>
     <!-- 最近游玩 & 最爱游戏 -->
-    <div id="quickSection" style="display:none">
+    <div id="quickSection">
       <div class="cat-title">📌 快捷入口</div>
       <div class="quick-bar" id="quickBar"></div>
     </div>
@@ -478,6 +526,7 @@
     </div>
   </main>
 </section>
+</div>
 
 <!-- 底部 Tab 栏 -->
 <nav class="tabbar">
@@ -749,7 +798,7 @@ function renderGames() {
 
 // === 快捷入口：最近游玩 + 最爱游戏 ===
 async function loadQuickEntries() {
-  if (!GP.getToken()) { document.getElementById('quickSection').style.display = 'none'; return; }
+  if (!GP.getToken()) { document.getElementById('quickSection').classList.remove('visible'); return; }
   if (!_allGamesFlat.length) { buildFlatFromStatic(); }
 
   const quickBar = document.getElementById('quickBar');
@@ -799,10 +848,10 @@ async function loadQuickEntries() {
     }
 
     if (entries.length === 0) {
-      quickSection.style.display = 'none';
+      quickSection.classList.remove('visible');
       return;
     }
-    quickSection.style.display = '';
+    quickSection.classList.add('visible');
 
     quickBar.innerHTML = entries.map(e => {
       const timeStr = e.time ? new Date(e.time).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) : '';
@@ -817,7 +866,7 @@ async function loadQuickEntries() {
       </div>`;
     }).join('');
   } catch (e) {
-    quickSection.style.display = 'none';
+    quickSection.classList.remove('visible');
   }
 }
 
@@ -1227,12 +1276,15 @@ async function renderLeaderboardContent(g) {
           g.classList.add('lb-diff-collapsed');
           g.classList.add('lb-show-' + showCount);
         });
+        // Stagger entrance for leaderboard items
+        staggerLBItems(content);
       });
     } else {
       // 单难度游戏（不过滤同用户，显示所有上分成绩）
       const items = await GP.getLeaderboard(g.id, 10, null, null, null, false);
       if (!items || !items.length) { content.innerHTML = '<div class="lb-empty">暂无记录，快来抢榜首！</div>'; return; }
       content.innerHTML = `<h2>🏆 ${esc(g.name)} 天梯榜</h2>` + items.map((it, i) => renderLBItem(i, it, g.id)).join('');
+      staggerLBItems(content);
     }
   } catch (e) {
     content.innerHTML = '<div class="lb-empty">加载失败，请稍后重试</div>';
@@ -1270,6 +1322,15 @@ function renderLBItem(i, it, gameId, diffKey) {
   </div>`;
 }
 
+// Stagger entrance animation for leaderboard items (40ms between each)
+function staggerLBItems(container) {
+  const items = container.querySelectorAll('.lb-item');
+  items.forEach((el, i) => {
+    el.classList.add('lb-item--enter');
+    el.style.animationDelay = (i * 40) + 'ms';
+  });
+}
+
 // === 登录态渲染 ===
 function onLogin(user) {
   currentUser = user;
@@ -1299,7 +1360,7 @@ function onLogout() {
   box.onclick = () => openModal('authModal');
   document.getElementById('meLoggedActions').style.display = 'none';
   document.getElementById('meRecords').style.display = 'none';
-  document.getElementById('quickSection').style.display = 'none';
+  document.getElementById('quickSection').classList.remove('visible');
   // 退出登录后强制切回主页
   document.getElementById('pageGames').classList.add('active');
   document.getElementById('pageLeaderboard').classList.remove('active');
@@ -1423,6 +1484,7 @@ function renderRecentScores(el, limit) {
     html += '<div class="me-record-more"><button onclick="renderRecentScores(document.getElementById(\'meRecentScores\'), ' + (limit === 5 ? 10 : 5) + ')">' + (limit === 5 ? '查看更多' : '收起') + '</button></div>';
   }
   el.innerHTML = html;
+  staggerRecordItems(el);
 }
 function renderBestScores(el, limit) {
   if (!_myRecordsCache) return;
@@ -1447,6 +1509,15 @@ function renderBestScores(el, limit) {
     html += '<div class="me-record-more"><button onclick="renderBestScores(document.getElementById(\'meBestScores\'), ' + (limit === 5 ? 10 : 5) + ')">' + (limit === 5 ? '查看更多' : '收起') + '</button></div>';
   }
   el.innerHTML = html;
+  staggerRecordItems(el);
+}
+
+function staggerRecordItems(container) {
+  const items = container.querySelectorAll('.me-record-item');
+  items.forEach((el, i) => {
+    el.classList.add('me-record-item--enter');
+    el.style.animationDelay = (i * 50) + 'ms';
+  });
 }
 
 // === 登录 / 注册 ===
