@@ -1068,20 +1068,18 @@ function initLeaderboardTab() {
   const sidebar = document.getElementById('lbSidebar');
   if (sidebar.children.length > 0) return; // 已初始化
 
-  // 构建游戏列表（按名称首字母排序，skip 的游戏排在后面）
+  // 构建游戏列表（按名称首字母排序，过滤掉 skip 和 disabled 游戏）
   _lbGames = [];
   GAMES.categories.forEach(cat => {
-    cat.games.forEach(g => _lbGames.push(g));
+    cat.games.forEach(g => {
+      if (!g.skip && g.enabled !== false) _lbGames.push(g);
+    });
   });
-  _lbGames.sort((a, b) => {
-    if (a.skip !== b.skip) return a.skip ? 1 : -1;
-    return a.name.localeCompare(b.name, 'zh-CN');
-  });
+  _lbGames.sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'));
 
   // 按拼音首字母分组
   const groupMap = new Map();
   _lbGames.forEach(g => {
-    if (g.skip || g.enabled === false) return;
     const first = g.name.charAt(0);
     let letter = _PINYIN[first] || (/[a-zA-Z]/.test(first) ? first.toUpperCase() : '#');
     if (!groupMap.has(letter)) groupMap.set(letter, []);
@@ -1101,22 +1099,12 @@ function initLeaderboardTab() {
     }).join('')
   ).join('');
 
-  // 渲染 skip 游戏
-  const skipGames = _lbGames.filter(g => g.skip);
-  if (skipGames.length > 0) {
-    sidebar.innerHTML += skipGames.map(g =>
-      `<div class="lb-sidebar-item lb-skip-item" data-game="${g.id}" onclick="selectLBGame('${g.id}')">
-        ${esc(g.name)}<span class="lb-skip-badge">娱乐向</span>
-      </div>`
-    ).join('');
-  }
-
   renderIndexBar();
   renderMiniList();
 
   // 默认选中第一个非 skip 游戏（仅登录时自动展示天梯榜）
   if (GP.getToken()) {
-    const first = _lbGames.find(g => !g.skip && g.enabled !== false);
+    const first = _lbGames[0];
     if (first) selectLBGame(first.id);
   }
 }
@@ -1124,9 +1112,8 @@ function initLeaderboardTab() {
 function renderMiniList() {
   const mini = document.getElementById('lbMiniList');
   if (!mini) return;
-  // 收缩态迷你列表：每个游戏显示首字，skip 和 enabled=false 的游戏不显示
-  const games = _lbGames.filter(g => !g.skip && g.enabled !== false);
-  mini.innerHTML = games.map(g => {
+  // 收缩态迷你列表：每个游戏显示首字
+  mini.innerHTML = _lbGames.map(g => {
     const first = g.name.charAt(0);
     return `<div class="lb-mini-item" data-game="${g.id}" onclick="selectLBGame('${g.id}')" title="${esc(g.name)}">${first}</div>`;
   }).join('');
@@ -1141,9 +1128,8 @@ function updateMiniActive(gameId) {
 function renderIndexBar() {
   const bar = document.getElementById('lbIndexBar');
   if (!bar) return;
-  // 非 skip 且非 disabled 的游戏数 ≤ 6 时不显示索引栏
-  const activeCount = _lbGames.filter(g => !g.skip && g.enabled !== false).length;
-  if (activeCount <= 6) { bar.style.display = 'none'; return; }
+  // 游戏数 ≤ 6 时不显示索引栏
+  if (_lbGames.length <= 6) { bar.style.display = 'none'; return; }
   // sidebar 内容未溢出（无需滚动）时也不显示索引栏
   const sidebar = document.getElementById('lbSidebar');
   if (sidebar && sidebar.scrollHeight <= sidebar.clientHeight) {
@@ -1206,14 +1192,10 @@ function selectLBGame(gameId) {
     const content = document.getElementById('lbContent');
     content.innerHTML = '<div class="lb-loading">加载中…</div>';
 
-    if (g.skip) {
-      content.innerHTML = '<div class="lb-empty">🎲 娱乐向游戏，不计入天梯榜</div>';
+    if (g.enabled === false) {
+      content.innerHTML = '<div class="lb-empty">🚧 即将上线，敬请期待</div>';
       return;
     }
-  if (g.enabled === false) {
-    content.innerHTML = '<div class="lb-empty">🚧 即将上线，敬请期待</div>';
-    return;
-  }
 
   renderLeaderboardContent(g);
   });
