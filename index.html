@@ -22,14 +22,22 @@
   body {
     margin: 0; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
     background: var(--bg); color: var(--text); padding-bottom: 90px;
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
   }
   .topbar {
     position: sticky; top: 0; z-index: 20; display: flex; align-items: center;
-    justify-content: center; padding: 14px 16px; background: #fff;
-    box-shadow: 0 2px 12px rgba(0,0,0,.05);
+    justify-content: center; padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    /* Scroll edge mask: fade the bottom edge where content meets floating chrome */
+    mask-image: linear-gradient(to bottom, black 80%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent);
   }
-  .brand { font-weight: 700; font-size: 18px; }
-  .brand small { color: var(--sub); font-weight: 400; font-size: 12px; margin-left: 6px; }
+  .brand { font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
+  .brand small { color: var(--sub); font-weight: 400; font-size: 12px; margin-left: 6px; letter-spacing: 0; }
   .avatar {
     width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
     background: #cfd8dc; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.12);
@@ -44,7 +52,7 @@
   .btn[disabled] { opacity: .5; transform: none; }
 
   main { padding: 8px 14px; }
-  .cat-title { font-size: 15px; font-weight: 700; margin: 18px 4px 10px; color: var(--text); }
+  .cat-title { font-size: 15px; font-weight: 700; margin: 18px 4px 10px; color: var(--text); letter-spacing: -0.01em; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .card {
     background: var(--card); border-radius: 16px; padding: 14px; cursor: pointer;
@@ -54,7 +62,7 @@
     min-height: 110px; min-width: 0;
   }
   .card:active { transform: scale(.97); box-shadow: 0 1px 6px rgba(0,0,0,.08); }
-  .card-name { font-size: 16px; font-weight: 700; }
+  .card-name { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.15; }
   .card-desc { font-size: 12px; color: var(--sub); line-height: 1.4; min-height: 34px; }
   .card-best { font-size: 12px; color: var(--primary-d); margin-top: 2px; position: relative; overflow: hidden; height: 19px; min-width: 0; }
   .card-best b { color: var(--text); font-weight: 700; }
@@ -64,16 +72,33 @@
   .card-best-item .best-score { flex-shrink: 0; white-space: nowrap; }
 
   .modal {
-    position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.45);
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     display: flex; align-items: flex-end; justify-content: center;
   }
   .modal.hidden { display: none; }
   .sheet {
-    background: #fff; width: 100%; max-width: 460px; border-radius: 20px 20px 0 0;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    width: 100%; max-width: 460px; border-radius: 20px 20px 0 0;
     padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
-    animation: up 280ms var(--ease-drawer) both;
+    animation: sheetUp 350ms var(--ease-drawer) both;
   }
-  @keyframes up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes sheetUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  /* Mask the scrim-to-sheet edge: fade sheet top so it blends into the blur */
+  .sheet::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 30px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.92));
+    border-radius: 20px 20px 0 0;
+    pointer-events: none;
+  }
   .sheet-head { text-align: center; padding: 6px 0 10px; }
   .wx-badge {
     width: 54px; height: 54px; border-radius: 14px; background: var(--primary);
@@ -85,11 +110,13 @@
   .sheet-tabs button {
     flex: none; padding: 8px 2px; border: none; background: none;
     font-size: 17px; font-weight: 600; color: #999; cursor: pointer; position: relative;
+    transition: color 200ms var(--ease-out);
   }
   .sheet-tabs button.active { color: var(--primary); }
   .sheet-tabs button.active::after {
     content: ''; position: absolute; left: 50%; transform: translateX(-50%);
     bottom: -6px; width: 22px; height: 3px; border-radius: 2px; background: var(--primary);
+    transition: width 200ms var(--ease-out);
   }
   .sheet input[type=text], .sheet input[type=password] {
     width: 100%; padding: 13px 14px; margin-bottom: 12px; border: 1px solid #e3e3e3;
@@ -116,7 +143,11 @@
   /* === 底部 Tab 栏 === */
   .tabbar {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-    display: flex; background: #fff; border-top: 1px solid var(--line);
+    display: flex;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
     padding-bottom: env(safe-area-inset-bottom);
   }
   .tabbar button {
@@ -160,7 +191,7 @@
     flex-shrink: 0;
   }
   .me-info { flex: 1; min-width: 0; }
-  .me-name { font-size: 18px; font-weight: 700; }
+  .me-name { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.15; }
   .me-sub { font-size: 12px; color: var(--sub); margin-top: 4px; }
   .me-records { margin-top: 14px; }
   .me-section-title {
@@ -328,7 +359,7 @@
     letter-spacing: 1px; max-width: 130px;
   }
 
-  /* --- Accessibility: reduced motion --- */
+  /* --- Accessibility --- */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
@@ -336,6 +367,33 @@
       transition-duration: 0.01ms !important;
     }
     .card-best-track { transition: none !important; }
+    .sheet {
+      transition: opacity 200ms ease !important;
+      transform: none !important;
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .topbar {
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    .tabbar {
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    .modal {
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    .sheet {
+      background: #fff;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
   }
 
   /* --- Touch-safe hover: only on fine pointers --- */
