@@ -300,7 +300,7 @@
     width: 24px; height: 24px; border: 1px solid var(--line); background: #fff;
     border-radius: 6px; cursor: pointer; display: flex; align-items: center;
     justify-content: center; font-size: 12px; color: #666;
-    flex-shrink: 0; transition: transform 160ms var(--ease-out), background .15s; line-height: 1;
+    flex-shrink: 0; transition: transform 160ms var(--ease-out), background 150ms var(--ease-out); line-height: 1;
   }
   .lb-sidebar-toggle:active { background: #f0f0f0; transform: scale(0.92); }
   .lb-mini-list {
@@ -352,10 +352,20 @@
     display: flex; align-items: center; gap: 6px;
   }
   .lb-diff-title:first-child { margin-top: 0; padding-top: 2px; }
-  /* 折叠状态：只显示前 N 条（由 data-show-count 决定） */
-  .lb-diff-collapsed[data-show-count="2"] .lb-item:nth-child(n+3) { display: none; }
-  .lb-diff-collapsed[data-show-count="3"] .lb-item:nth-child(n+4) { display: none; }
-  .lb-diff-collapsed[data-show-count="5"] .lb-item:nth-child(n+6) { display: none; }
+  /* 折叠状态：隐藏超出条数，用 max-height+opacity 过渡替代 display:none */
+  .lb-item {
+    transition: opacity 200ms var(--ease-out), max-height 200ms var(--ease-out), padding 200ms var(--ease-out);
+    max-height: 50px;
+  }
+  .lb-diff-collapsed[data-show-count="2"] .lb-item:nth-child(n+3) {
+    opacity: 0; max-height: 0; overflow: hidden; padding-top: 0; padding-bottom: 0; border-bottom: none;
+  }
+  .lb-diff-collapsed[data-show-count="3"] .lb-item:nth-child(n+4) {
+    opacity: 0; max-height: 0; overflow: hidden; padding-top: 0; padding-bottom: 0; border-bottom: none;
+  }
+  .lb-diff-collapsed[data-show-count="5"] .lb-item:nth-child(n+6) {
+    opacity: 0; max-height: 0; overflow: hidden; padding-top: 0; padding-bottom: 0; border-bottom: none;
+  }
   .lb-more-btn { display: block; text-align: center; padding: 6px;
     color: #4472c4; font-size: 12px; cursor: pointer;
     transition: opacity 160ms var(--ease-out); }
@@ -424,11 +434,15 @@
     }
     .card-best-track { transition: none !important; }
     .modal { transition: opacity 0.01ms !important; }
-    .sheet { transition: opacity 200ms ease !important; transform: none !important; }
+    .sheet { transition: opacity 200ms var(--ease-out) !important; transform: none !important; }
     .modal.hidden .sheet { transform: none !important; }
     .page { transition: opacity 0.01ms !important; transform: none !important; }
     .lb-item--enter, .me-record-item--enter { animation: none !important; opacity: 1 !important; transform: none !important; }
     #quickSection { transition: opacity 0.01ms !important; max-height: none !important; }
+    .lb-item { transition: none !important; max-height: none !important; }
+    .lb-diff-collapsed .lb-item:nth-child(n+3),
+    .lb-diff-collapsed .lb-item:nth-child(n+4),
+    .lb-diff-collapsed .lb-item:nth-child(n+6) { opacity: 0 !important; max-height: 0 !important; }
   }
 
   @media (prefers-reduced-transparency: reduce) {
