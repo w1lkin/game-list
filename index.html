@@ -77,19 +77,25 @@
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     display: flex; align-items: flex-end; justify-content: center;
+    transition: opacity 200ms var(--ease-out), visibility 0ms 200ms;
   }
-  .modal.hidden { display: none; }
+  .modal.hidden {
+    opacity: 0; visibility: hidden;
+    pointer-events: none;
+  }
+  .modal.hidden .sheet {
+    transform: translateY(100%);
+    opacity: 0;
+  }
   .sheet {
     background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     width: 100%; max-width: 460px; border-radius: 20px 20px 0 0;
     padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
-    animation: sheetUp 350ms var(--ease-drawer) both;
-  }
-  @keyframes sheetUp {
-    from { transform: translateY(100%); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    transform: translateY(0);
+    opacity: 1;
+    transition: transform 280ms var(--ease-drawer), opacity 280ms var(--ease-drawer);
   }
   /* Mask the scrim-to-sheet edge: fade sheet top so it blends into the blur */
   .sheet::before {
@@ -216,8 +222,9 @@
     border: none; background: var(--card); color: var(--primary-d); font-size: 13px;
     padding: 8px 20px; border-radius: 8px; cursor: pointer;
     box-shadow: 0 1px 4px rgba(0,0,0,.03);
+    transition: transform 160ms var(--ease-out), opacity 160ms var(--ease-out);
   }
-  .me-record-more button:active { opacity: .8; }
+  .me-record-more button:active { opacity: .8; transform: scale(0.97); }
   .me-menu {
     margin-top: 14px; background: var(--card); border-radius: 16px; overflow: hidden;
     box-shadow: 0 2px 10px rgba(0,0,0,.04);
@@ -225,9 +232,10 @@
   .me-menu-item {
     display: flex; align-items: center; gap: 12px; padding: 16px;
     border-bottom: 1px solid var(--line); cursor: pointer; font-size: 15px;
+    transition: background 150ms var(--ease-out), transform 160ms var(--ease-out);
   }
   .me-menu-item:last-child { border-bottom: none; }
-  .me-menu-item:active { background: #fafafa; }
+  .me-menu-item:active { background: #fafafa; transform: scale(0.98); }
   .me-menu-ico { font-size: 20px; }
   .me-menu-arrow { margin-left: auto; color: #ccc; font-size: 16px; }
   .me-menu-item-group { border-top: 1px solid var(--line); }
@@ -251,7 +259,7 @@
   }
   .lb-sidebar-header-label {
     font-size: 12px; font-weight: 700; color: var(--sub); overflow: hidden;
-    white-space: nowrap; transition: opacity .15s;
+    white-space: nowrap; transition: opacity 150ms var(--ease-out);
   }
   .lb-sidebar-wrap.collapsed .lb-sidebar-header-label { display: none; }
   .lb-sidebar-toggle {
@@ -270,14 +278,15 @@
   .lb-mini-item {
     width: 28px; height: 28px; display: flex; align-items: center;
     justify-content: center; font-size: 12px; font-weight: 700;
-    color: var(--sub); cursor: pointer; transition: color .15s, background .15s;
+    color: var(--sub); cursor: pointer;
+    transition: color 150ms var(--ease-out), background 150ms var(--ease-out);
     border-radius: 6px; margin: 0 auto; flex-shrink: 0;
     background: #fafafa;
   }
   .lb-mini-item:active, .lb-mini-item.active { color: var(--primary); background: #e8f5e9; }
   .lb-sidebar-inner {
     flex: 1; overflow: hidden; display: flex; flex-direction: column;
-    transition: opacity .15s;
+    transition: opacity 150ms var(--ease-out);
   }
   .lb-sidebar-wrap.collapsed .lb-sidebar-inner { display: none; }
   .lb-sidebar {
@@ -287,11 +296,12 @@
   .lb-sidebar::-webkit-scrollbar { display: none; }
   .lb-sidebar-item {
     padding: 12px 10px; font-size: 13px; cursor: pointer; color: var(--text);
-    border-bottom: 1px solid var(--line); transition: background .15s;
+    border-bottom: 1px solid var(--line);
+    transition: background 150ms var(--ease-out), transform 160ms var(--ease-out);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     max-width: 130px;
   }
-  .lb-sidebar-item:active { background: #fafafa; }
+  .lb-sidebar-item:active { background: #fafafa; transform: scale(0.98); }
   .lb-sidebar-item.active { color: var(--primary); font-weight: 700; background: #f0faf3; }
   .lb-sidebar-item .lb-skip-badge { font-size: 10px; color: var(--sub); }
   .lb-content-wrap {
@@ -313,7 +323,9 @@
   .lb-diff-collapsed[data-show-count="3"] .lb-item:nth-child(n+4) { display: none; }
   .lb-diff-collapsed[data-show-count="5"] .lb-item:nth-child(n+6) { display: none; }
   .lb-more-btn { display: block; text-align: center; padding: 6px;
-    color: #4472c4; font-size: 12px; cursor: pointer; }
+    color: #4472c4; font-size: 12px; cursor: pointer;
+    transition: opacity 160ms var(--ease-out); }
+  .lb-more-btn:active { opacity: 0.7; }
   .lb-item {
     display: flex; align-items: center; gap: 8px; padding: 8px 0;
     border-bottom: 1px solid #f5f5f5; font-size: 14px;
@@ -340,7 +352,7 @@
     width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
     font-size: 11px; color: var(--sub); cursor: pointer; border-radius: 50%;
     font-weight: 700; user-select: none; -webkit-user-select: none;
-    transition: color .15s, background .15s;
+    transition: color 150ms var(--ease-out), background 150ms var(--ease-out);
   }
   .lb-index-dot:active { color: var(--primary); background: #f0faf3; }
   /* 字母索引 tooltip */
@@ -349,7 +361,7 @@
     background: rgba(0,0,0,.75); color: #fff; font-size: 32px; font-weight: 700;
     width: 56px; height: 56px; border-radius: 50%; display: flex;
     align-items: center; justify-content: center; z-index: 100;
-    pointer-events: none; opacity: 0; transition: opacity .1s;
+    pointer-events: none; opacity: 0; transition: opacity 120ms var(--ease-out);
   }
   .lb-index-tip.show { opacity: 1; }
   /* 侧边栏内分组字母标记 */
@@ -367,10 +379,9 @@
       transition-duration: 0.01ms !important;
     }
     .card-best-track { transition: none !important; }
-    .sheet {
-      transition: opacity 200ms ease !important;
-      transform: none !important;
-    }
+    .modal { transition: opacity 0.01ms !important; }
+    .sheet { transition: opacity 200ms ease !important; transform: none !important; }
+    .modal.hidden .sheet { transform: none !important; }
   }
 
   @media (prefers-reduced-transparency: reduce) {
@@ -701,8 +712,16 @@ function toast(msg) {
   t.textContent = msg; t.classList.add('show');
   clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2000);
 }
-function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id) {
+  const el = document.getElementById(id);
+  el.classList.add('hidden');
+}
+function openModal(id) {
+  const el = document.getElementById(id);
+  // Remove hidden to trigger CSS transition from hidden→visible
+  // .modal.hidden sets opacity:0 + sheet translateY(100%); removing it transitions in
+  el.classList.remove('hidden');
+}
 
 // === 渲染游戏列表 ===
 function renderGames() {
@@ -921,6 +940,40 @@ function startBestFlip(gameId, count) {
   };
   _bestTimers[gameId] = setInterval(step, 3000);
 }
+
+// Pause best-flip carousels when tab is hidden (save battery, avoid unnecessary JS cycles)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    Object.keys(_bestTimers).forEach(id => {
+      clearInterval(_bestTimers[id]);
+      _bestTimers[id] = null;
+    });
+  } else {
+    // Resume: re-read the DOM and restart flips
+    for (const cat of GAMES.categories) {
+      for (const g of cat.games) {
+        if (g.skip || g.enabled === false) continue;
+        const track = document.getElementById('best-track-' + g.id);
+        if (!track || track.children.length <= 1) continue;
+        let idx = 0;
+        const itemHeight = 19;
+        const count = track.children.length - 1; // minus the clone
+        _bestTimers[g.id] = setInterval(() => {
+          idx++;
+          track.style.transition = 'transform 500ms cubic-bezier(0.23, 1, 0.32, 1)';
+          track.style.transform = 'translateY(-' + (idx * itemHeight) + 'px)';
+          if (idx >= count) {
+            setTimeout(() => {
+              track.style.transition = 'none';
+              track.style.transform = 'translateY(0)';
+            }, 500);
+            idx = 0;
+          }
+        }, 3000);
+      }
+    }
+  }
+});
 
 // === Tab 切换 ===
 function switchTab(tab) {
