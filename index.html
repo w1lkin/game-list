@@ -726,13 +726,13 @@ async function loadGamesFromAPI() {
           diffs: g.diffs || null,
         });
       });
-      // 按分类名排序（保持一致的展示顺序）
-      const catOrder = ['模拟体验', '休闲娱乐', '玄学趣玩', '脑力挑战'];
+      // 按分类名排序（GameBoy经典 置顶）
+      const catOrder = ['GameBoy经典', '模拟体验', '休闲娱乐', '玄学趣玩', '脑力挑战'];
       const categories = [];
       catOrder.forEach(name => {
         if (catMap.has(name)) categories.push(catMap.get(name));
       });
-      // 处理未知分类
+      // 处理未知分类（排在最后）
       catMap.forEach((v, k) => {
         if (!catOrder.includes(k)) categories.push(v);
       });
