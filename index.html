@@ -645,7 +645,7 @@ function fmtLeaderScore(gameId, difficulty, rawScore) {
     const s = (Number(rawScore) || 0) - base;
     return (Number.isInteger(s) ? String(s) : s.toFixed(1)) + 's';
   }
-  if (gameId === 'greedy-snake') return fmtScore(rawScore) + ' 节';
+  if (gameId === 'greedy-snake') return fmtScore(rawScore) + ' 分';
   if (gameId === 'human-bench') {
     const unit = HUMAN_BENCH_UNITS[difficulty] || '';
     const num = Number(rawScore);
