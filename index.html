@@ -727,7 +727,7 @@ async function loadGamesFromAPI() {
         });
       });
       // 按分类名排序（GameBoy经典 置顶）
-      const catOrder = ['GameBoy经典', '模拟体验', '休闲娱乐', '玄学趣玩', '脑力挑战'];
+      const catOrder = ['GameBoy经典', '休闲娱乐', '脑力挑战', '玄学趣玩', '模拟体验'];
       const categories = [];
       catOrder.forEach(name => {
         if (catMap.has(name)) categories.push(catMap.get(name));
