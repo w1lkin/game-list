@@ -28,7 +28,7 @@ game-list/
 
 ## 维护
 
-编辑 `GAMES.categories` 数组可添加 / 更新游戏。三个分类：模拟体验、休闲娱乐、玄学趣玩。跳过非游戏项目（如 `game-api`、`game-list` 自身）。
+编辑 `GAMES.categories` 数组可添加 / 更新游戏。四个分类：模拟体验、休闲娱乐、玄学趣玩、脑力挑战。跳过非游戏项目（如 `game-api`、`match-3`、`game-list` 自身）。
 
 ## 部署
 
