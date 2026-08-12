@@ -711,8 +711,15 @@ let _allGamesFlat = []; // 从 API 加载的扁平游戏列表
 async function boot() {
   GP = window.GamePlatform;
   GP.init();
+
+  // 搜索框事件
+  const searchInput = document.getElementById('searchInput');
+  searchInput.addEventListener('input', (e) => onSearchInput(e.target.value));
+  // 回车也触发搜索
+  searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { renderGames(e.target.value); searchInput.blur(); } });
+
   await loadGamesFromAPI();
-  renderGames();
+  renderGames('');
   if (GP.getToken()) {
     GP.getUser().then(u => u ? onLogin(u) : onLogout()).catch(onLogout);
   } else {
@@ -825,17 +832,28 @@ function openModal(id) {
 }
 
 // === 渲染游戏列表 ===
-function renderGames() {
+function renderGames(filterText) {
   const root = document.getElementById('gameList');
   root.innerHTML = '';
+
+  const q = (filterText || '').trim().toLowerCase();
+  let hasResult = false;
+
   GAMES.categories.forEach(cat => {
+    // 过滤匹配的游戏
+    const matched = q
+      ? cat.games.filter(g => g.name.toLowerCase().includes(q) || g.desc.toLowerCase().includes(q))
+      : cat.games;
+    if (!matched.length) return;
+    hasResult = true;
+
     const h = document.createElement('div');
     h.className = 'cat-title';
     const emojiMap = { puzzle: '🎭', controller: '🧩', compass: '🔮', board: '🧪', gameboy: '🕹️' };
     h.textContent = (emojiMap[cat.emoji] || cat.emoji || '🎮') + ' ' + cat.name;
     root.appendChild(h);
     const grid = document.createElement('div'); grid.className = 'grid';
-    cat.games.forEach(g => {
+    matched.forEach(g => {
       const card = document.createElement('div');
       card.className = 'card';
       card.style.position = 'relative';
@@ -850,9 +868,63 @@ function renderGames() {
     });
     root.appendChild(grid);
   });
+
+  if (!hasResult && q) {
+    root.innerHTML = '<div class="search-no-result">😕 没有找到匹配的游戏</div>';
+  }
+
+  // 搜索后也需要加载最强者数据
+  if (!q) {
+    loadBests();
+  }
 }
 
-// === 快捷入口：最近游玩 + 最爱游戏 ===
+// === 搜索 ===
+let _searchTimer = null;
+function onSearchInput(val) {
+  const clearBtn = document.getElementById('searchClear');
+  clearBtn.classList.toggle('visible', val.length > 0);
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => {
+    renderGames(val);
+  }, 200);
+}
+function clearSearch() {
+  const input = document.getElementById('searchInput');
+  input.value = '';
+  document.getElementById('searchClear').classList.remove('visible');
+  renderGames('');
+  loadBests();
+}
+
+// === 收藏功能 ===
+const FAV_KEY = 'gamehub_favorites';
+function getFavorites() {
+  try { return JSON.parse(localStorage.getItem(FAV_KEY)) || []; } catch(e) { return []; }
+}
+function saveFavorites(list) {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify(list)); } catch(e) {}
+}
+function isFavorite(gameId) {
+  return getFavorites().includes(gameId);
+}
+function toggleFav(gameId, btnEl) {
+  let favs = getFavorites();
+  const idx = favs.indexOf(gameId);
+  if (idx >= 0) {
+    favs.splice(idx, 1);
+    if (btnEl) { btnEl.classList.remove('faved'); btnEl.classList.add('unfaved'); btnEl.textContent = '🤍'; }
+    toast('已取消收藏');
+  } else {
+    favs.push(gameId);
+    if (btnEl) { btnEl.classList.remove('unfaved'); btnEl.classList.add('faved'); btnEl.textContent = '❤️'; }
+    toast('已收藏');
+  }
+  saveFavorites(favs);
+  loadQuickEntries();
+}
+
+// === 快捷入口：收藏 + 最近游玩（各最多2个，去重）===
 async function loadQuickEntries() {
   if (!GP.getToken()) { document.getElementById('quickSection').classList.remove('visible'); return; }
   if (!_allGamesFlat.length) { buildFlatFromStatic(); }
@@ -861,69 +933,64 @@ async function loadQuickEntries() {
   const quickSection = document.getElementById('quickSection');
   quickBar.innerHTML = '';
 
+  const entries = [];
+  const addedIds = new Set();
+
+  // 1. 先放收藏（最多2个）
+  const favs = getFavorites();
+  for (const favId of favs) {
+    if (entries.length >= 2) break;
+    const g = findGame(favId);
+    if (g) {
+      entries.push({ type: 'fav', label: '我的收藏', game: g });
+      addedIds.add(favId);
+    }
+  }
+
+  // 2. 再放最近游玩（最多2个，排除已收藏的）
   try {
-    // 拉取所有游戏的个人记录，找出最近游玩和最爱
     const gameIds = _allGamesFlat.filter(g => !g.skip).map(g => g.id);
     const results = await Promise.all(
-      gameIds.map(id => GP.getMyScores(id, 50).then(items => ({ gameId: id, items })))
+      gameIds.map(id => GP.getMyScores(id, 50).then(items => ({ gameId: id, items })).catch(() => ({ gameId: id, items: [] })))
     );
 
-    // 最近游玩：各游戏最近一次游玩时间，取 top 2
     let recentList = [];
     results.forEach(({ gameId, items }) => {
       if (items.length > 0) {
-        recentList.push({ gameId, lastPlayed: Math.max(...items.map(i => i.created_at)), count: items.length });
+        recentList.push({ gameId, lastPlayed: Math.max(...items.map(i => i.created_at)) });
       }
     });
     recentList.sort((a, b) => b.lastPlayed - a.lastPlayed);
-    const topRecent = recentList.slice(0, 2);
 
-    // 最爱游戏：游玩次数最多，取 top 2
-    let favList = [...recentList];
-    favList.sort((a, b) => b.count - a.count);
-    const topFav = favList.slice(0, 2);
-
-    const entries = [];
-    if (topRecent.length > 0) {
-      const g = findGame(topRecent[0].gameId);
-      if (g) entries.push({ type: 'recent', label: '最近游玩', game: g, time: topRecent[0].lastPlayed });
-    }
-    if (topRecent.length > 1) {
-      const g = findGame(topRecent[1].gameId);
-      if (g) entries.push({ type: 'recent', label: '最近游玩', game: g, time: topRecent[1].lastPlayed });
-    }
-
-    if (entries.length < 2 && topFav.length > 0) {
-      // 用最爱游戏补充
-      for (const fav of topFav) {
-        if (entries.length >= 2) break;
-        if (entries.some(e => e.game.id === fav.gameId)) continue;
-        const g = findGame(fav.gameId);
-        if (g) entries.push({ type: 'fav', label: '最爱游戏', game: g, count: fav.count });
+    for (const r of recentList) {
+      if (entries.length >= 4) break;
+      if (addedIds.has(r.gameId)) continue; // 去重
+      const g = findGame(r.gameId);
+      if (g) {
+        entries.push({ type: 'recent', label: '最近游玩', game: g, time: r.lastPlayed });
+        addedIds.add(r.gameId);
       }
     }
+  } catch (e) {}
 
-    if (entries.length === 0) {
-      quickSection.classList.remove('visible');
-      return;
-    }
-    quickSection.classList.add('visible');
-
-    quickBar.innerHTML = entries.map(e => {
-      const timeStr = e.time ? new Date(e.time).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) : '';
-      const sub = e.type === 'recent' ? timeStr : (e.count ? '玩了 ' + e.count + ' 次' : '');
-      return `<div class="quick-card" onclick="openGameById('${e.game.id}')">
-        <span class="quick-emoji">${e.type === 'recent' ? '🕐' : '❤️'}</span>
-        <div class="quick-info">
-          <div class="quick-label">${e.type === 'recent' ? '最近游玩' : '最爱游戏'}</div>
-          <div class="quick-name">${esc(e.game.name)}</div>
-          ${sub ? '<div class="quick-sub">' + sub + '</div>' : ''}
-        </div>
-      </div>`;
-    }).join('');
-  } catch (e) {
+  if (entries.length === 0) {
     quickSection.classList.remove('visible');
+    return;
   }
+  quickSection.classList.add('visible');
+
+  quickBar.innerHTML = entries.map(e => {
+    const timeStr = e.time ? new Date(e.time).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) : '';
+    const sub = e.type === 'recent' ? timeStr : '';
+    return `<div class="quick-card" onclick="openGameById('${e.game.id}')">
+      <span class="quick-emoji">${e.type === 'fav' ? '⭐' : '🕐'}</span>
+      <div class="quick-info">
+        <div class="quick-label">${e.type === 'fav' ? '我的收藏' : '最近游玩'}</div>
+        <div class="quick-name">${esc(e.game.name)}</div>
+        ${sub ? '<div class="quick-sub">' + sub + '</div>' : ''}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function findGame(gameId) {
