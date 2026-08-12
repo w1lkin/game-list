@@ -1050,12 +1050,22 @@ let _lbGames = [];
 let _lbSelectedGame = null;
 let _lbGroups = []; // { letter, gameIds[] }
 
-// 拼音首字母映射（仅需覆盖游戏名首字）
-const _PINYIN = {
-  '翻': 'F', '贪': 'T', '扫': 'S', '俄': 'E', '中': 'Z',
-  '人': 'R', '替': 'T', '掷': 'Z', '人': 'R',
-  '华': 'H',
-};
+// 动态拼音首字母：利用 localeCompare 与 26 个字母比较确定区间
+function getPinyinInitial(ch) {
+  if (!/[\u4e00-\u9fff]/.test(ch)) {
+    return /[a-zA-Z]/.test(ch) ? ch.toUpperCase() : '#';
+  }
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let lo = 0, hi = 25;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const cmp = ch.localeCompare(letters[mid], 'zh-CN');
+    if (cmp === 0) return letters[mid];
+    if (cmp < 0) hi = mid - 1;
+    else lo = mid + 1;
+  }
+  return letters[Math.min(lo, 25)] || '#';
+}
 
 function toggleSidebar() {
   guard(() => {
@@ -1084,7 +1094,7 @@ function initLeaderboardTab() {
   const groupMap = new Map();
   _lbGames.forEach(g => {
     const first = g.name.charAt(0);
-    let letter = _PINYIN[first] || (/[a-zA-Z]/.test(first) ? first.toUpperCase() : '#');
+    let letter = getPinyinInitial(first);
     if (!groupMap.has(letter)) groupMap.set(letter, []);
     groupMap.get(letter).push(g.id);
   });
