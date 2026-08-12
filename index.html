@@ -1151,6 +1151,9 @@ function switchTab(tab) {
   document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'leaderboard');
   document.getElementById('tabMe').classList.toggle('active', tab === 'me');
 
+  // 搜索框仅在主页 tab 显示
+  document.querySelector('.search-wrap').style.display = tab === 'games' ? '' : 'none';
+
   if (tab === 'leaderboard') {
     initLeaderboardTab();
   }
