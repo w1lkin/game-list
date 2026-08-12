@@ -926,7 +926,7 @@ async function toggleFav(gameId, btnEl) {
   } catch(e) { toast('操作失败：' + (e.message || '网络错误')); }
 }
 
-// === 快捷入口：收藏 + 最近游玩（各最多2个，去重）===
+// === 快捷入口：收藏按先后顺序倒序，最多4个；无收藏时默认展示2个最近游玩 ===
 async function loadQuickEntries() {
   if (!GP.getToken()) { document.getElementById('quickSection').classList.remove('visible'); return; }
   if (!_allGamesFlat.length) { buildFlatFromStatic(); }
@@ -938,10 +938,10 @@ async function loadQuickEntries() {
   const entries = [];
   const addedIds = new Set();
 
-  // 1. 先放收藏（最多2个）
-  const favs = _cachedFavorites;
+  // 1. 收藏按先后顺序倒序排列（后收藏的排前面），最多4个
+  const favs = [..._cachedFavorites].reverse(); // 倒序：最后收藏的最先显示
   for (const favId of favs) {
-    if (entries.length >= 2) break;
+    if (entries.length >= 4) break;
     const g = findGame(favId);
     if (g) {
       entries.push({ type: 'fav', label: '我的收藏', game: g });
@@ -949,31 +949,32 @@ async function loadQuickEntries() {
     }
   }
 
-  // 2. 再放最近游玩（最多2个，排除已收藏的）
-  try {
-    const gameIds = _allGamesFlat.filter(g => !g.skip).map(g => g.id);
-    const results = await Promise.all(
-      gameIds.map(id => GP.getMyScores(id, 50).then(items => ({ gameId: id, items })).catch(() => ({ gameId: id, items: [] })))
-    );
+  // 2. 无收藏时：默认展示2个最近游玩
+  if (entries.length === 0) {
+    try {
+      const gameIds = _allGamesFlat.filter(g => !g.skip).map(g => g.id);
+      const results = await Promise.all(
+        gameIds.map(id => GP.getMyScores(id, 50).then(items => ({ gameId: id, items })).catch(() => ({ gameId: id, items: [] })))
+      );
 
-    let recentList = [];
-    results.forEach(({ gameId, items }) => {
-      if (items.length > 0) {
-        recentList.push({ gameId, lastPlayed: Math.max(...items.map(i => i.created_at)) });
-      }
-    });
-    recentList.sort((a, b) => b.lastPlayed - a.lastPlayed);
+      let recentList = [];
+      results.forEach(({ gameId, items }) => {
+        if (items.length > 0) {
+          recentList.push({ gameId, lastPlayed: Math.max(...items.map(i => i.created_at)) });
+        }
+      });
+      recentList.sort((a, b) => b.lastPlayed - a.lastPlayed);
 
-    for (const r of recentList) {
-      if (entries.length >= 4) break;
-      if (addedIds.has(r.gameId)) continue; // 去重
-      const g = findGame(r.gameId);
-      if (g) {
-        entries.push({ type: 'recent', label: '最近游玩', game: g, time: r.lastPlayed });
-        addedIds.add(r.gameId);
+      for (const r of recentList) {
+        if (entries.length >= 2) break;
+        const g = findGame(r.gameId);
+        if (g) {
+          entries.push({ type: 'recent', label: '最近游玩', game: g, time: r.lastPlayed });
+          addedIds.add(r.gameId);
+        }
       }
-    }
-  } catch (e) {}
+    } catch (e) {}
+  }
 
   if (entries.length === 0) {
     quickSection.classList.remove('visible');
