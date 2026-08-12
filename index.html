@@ -926,7 +926,7 @@ async function toggleFav(gameId, btnEl) {
   } catch(e) { toast('操作失败：' + (e.message || '网络错误')); }
 }
 
-// === 快捷入口：收藏按先后顺序倒序，最多4个；无收藏时默认展示2个最近游玩 ===
+// === 快捷入口：收藏倒序优先，不足4个时用最近游玩补齐，去重 ===
 async function loadQuickEntries() {
   if (!GP.getToken()) { document.getElementById('quickSection').classList.remove('visible'); return; }
   if (!_allGamesFlat.length) { buildFlatFromStatic(); }
@@ -939,7 +939,7 @@ async function loadQuickEntries() {
   const addedIds = new Set();
 
   // 1. 收藏按先后顺序倒序排列（后收藏的排前面），最多4个
-  const favs = [..._cachedFavorites].reverse(); // 倒序：最后收藏的最先显示
+  const favs = [..._cachedFavorites].reverse();
   for (const favId of favs) {
     if (entries.length >= 4) break;
     const g = findGame(favId);
@@ -949,8 +949,8 @@ async function loadQuickEntries() {
     }
   }
 
-  // 2. 无收藏时：默认展示2个最近游玩
-  if (entries.length === 0) {
+  // 2. 收藏不足4个时，用最近游玩补齐（去重，已收藏的不再显示）
+  if (entries.length < 4) {
     try {
       const gameIds = _allGamesFlat.filter(g => !g.skip).map(g => g.id);
       const results = await Promise.all(
@@ -966,7 +966,8 @@ async function loadQuickEntries() {
       recentList.sort((a, b) => b.lastPlayed - a.lastPlayed);
 
       for (const r of recentList) {
-        if (entries.length >= 2) break;
+        if (entries.length >= 4) break;
+        if (addedIds.has(r.gameId)) continue;
         const g = findGame(r.gameId);
         if (g) {
           entries.push({ type: 'recent', label: '最近游玩', game: g, time: r.lastPlayed });
