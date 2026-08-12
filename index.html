@@ -1050,21 +1050,31 @@ let _lbGames = [];
 let _lbSelectedGame = null;
 let _lbGroups = []; // { letter, gameIds[] }
 
-// 动态拼音首字母：利用 localeCompare 与 26 个字母比较确定区间
+// 拼音首字母：常见游戏名首字精确映射 + 区间近似兜底
+const _PINYIN_DICT = {
+  '翻':'F','贪':'T','扫':'S','俄':'E','中':'Z','人':'R','替':'T','掷':'Z',
+  '华':'H',
+};
+const _PY_RANGES = [
+  [0x4E00,'A'],[0x4E06,'B'],[0x4E2B,'C'],[0x553C,'D'],[0x560F,'E'],
+  [0x56ED,'F'],[0x570B,'G'],[0x5F04,'H'],[0x6238,'J'],[0x63A9,'K'],
+  [0x6538,'L'],[0x68D8,'M'],[0x6DDB,'N'],[0x6E11,'O'],[0x6E3B,'P'],
+  [0x74E4,'Q'],[0x7519,'R'],[0x7546,'S'],[0x758D,'T'],[0x75F9,'W'],
+  [0x772F,'X'],[0x7901,'Y'],[0x7926,'Z'],
+];
 function getPinyinInitial(ch) {
   if (!/[\u4e00-\u9fff]/.test(ch)) {
     return /[a-zA-Z]/.test(ch) ? ch.toUpperCase() : '#';
   }
-  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let lo = 0, hi = 25;
-  while (lo <= hi) {
-    const mid = (lo + hi) >> 1;
-    const cmp = ch.localeCompare(letters[mid], 'zh-CN');
-    if (cmp === 0) return letters[mid];
-    if (cmp < 0) hi = mid - 1;
-    else lo = mid + 1;
+  if (_PINYIN_DICT[ch]) return _PINYIN_DICT[ch];
+  const code = ch.charCodeAt(0);
+  let lo = 0, hi = _PY_RANGES.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (code >= _PY_RANGES[mid][0]) lo = mid;
+    else hi = mid - 1;
   }
-  return letters[Math.min(lo, 25)] || '#';
+  return _PY_RANGES[lo][1];
 }
 
 function toggleSidebar() {
