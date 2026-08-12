@@ -726,6 +726,7 @@ async function boot() {
     onLogout();
     openModal('authModal');
   }
+  loadFavorites().then(() => loadQuickEntries());
   loadBests();
   // 页面加载即初始化天梯榜 tab 的游戏列表/迷你列表等结构（无需登录）
   initLeaderboardTab();
@@ -897,31 +898,32 @@ function clearSearch() {
   loadBests();
 }
 
-// === 收藏功能 ===
-const FAV_KEY = 'gamehub_favorites';
-function getFavorites() {
-  try { return JSON.parse(localStorage.getItem(FAV_KEY)) || []; } catch(e) { return []; }
-}
-function saveFavorites(list) {
-  try { localStorage.setItem(FAV_KEY, JSON.stringify(list)); } catch(e) {}
+// === 收藏功能（云端存储）===
+let _cachedFavorites = [];
+async function loadFavorites() {
+  if (!GP.getToken()) { _cachedFavorites = []; return; }
+  try { _cachedFavorites = await GP.getFavorites(); } catch(e) { _cachedFavorites = []; }
 }
 function isFavorite(gameId) {
-  return getFavorites().includes(gameId);
+  return _cachedFavorites.includes(gameId);
 }
-function toggleFav(gameId, btnEl) {
-  let favs = getFavorites();
-  const idx = favs.indexOf(gameId);
-  if (idx >= 0) {
-    favs.splice(idx, 1);
-    if (btnEl) { btnEl.classList.remove('faved'); btnEl.classList.add('unfaved'); btnEl.textContent = '🤍'; }
-    toast('已取消收藏');
-  } else {
-    favs.push(gameId);
-    if (btnEl) { btnEl.classList.remove('unfaved'); btnEl.classList.add('faved'); btnEl.textContent = '❤️'; }
-    toast('已收藏');
-  }
-  saveFavorites(favs);
-  loadQuickEntries();
+async function toggleFav(gameId, btnEl) {
+  if (!GP.getToken()) { toast('请先登录'); openModal('authModal'); return; }
+  const isFaved = _cachedFavorites.includes(gameId);
+  try {
+    if (isFaved) {
+      await GP.removeFavorite(gameId);
+      _cachedFavorites = _cachedFavorites.filter(id => id !== gameId);
+      if (btnEl) { btnEl.classList.remove('faved'); btnEl.classList.add('unfaved'); btnEl.textContent = '🤍'; }
+      toast('已取消收藏');
+    } else {
+      await GP.addFavorite(gameId);
+      _cachedFavorites.push(gameId);
+      if (btnEl) { btnEl.classList.remove('unfaved'); btnEl.classList.add('faved'); btnEl.textContent = '❤️'; }
+      toast('已收藏');
+    }
+    loadQuickEntries();
+  } catch(e) { toast('操作失败：' + (e.message || '网络错误')); }
 }
 
 // === 快捷入口：收藏 + 最近游玩（各最多2个，去重）===
@@ -937,7 +939,7 @@ async function loadQuickEntries() {
   const addedIds = new Set();
 
   // 1. 先放收藏（最多2个）
-  const favs = getFavorites();
+  const favs = _cachedFavorites;
   for (const favId of favs) {
     if (entries.length >= 2) break;
     const g = findGame(favId);
@@ -1456,11 +1458,15 @@ function onLogin(user) {
   box.onclick = null;
   document.getElementById('meLoggedActions').style.display = '';
   document.getElementById('meRecords').style.display = '';
+  loadFavorites().then(() => {
+    loadQuickEntries();
+    renderGames(document.getElementById('searchInput').value);
+  });
   loadMyRecords();
-  loadQuickEntries();
 }
 function onLogout() {
   currentUser = null;
+  _cachedFavorites = [];
   const box = document.getElementById('meProfile');
   box.innerHTML =
     `<img class="me-avatar" src="${DEFAULT_AVATAR}">` +
@@ -1713,6 +1719,10 @@ async function submitProfile() {
 document.querySelectorAll('.modal').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) m.classList.add('hidden'); });
 });
+
+// 暴露到全局作用域，供 HTML onclick 使用
+window.toggleFav = toggleFav;
+window.clearSearch = clearSearch;
 </script>
 </body>
 </html>
