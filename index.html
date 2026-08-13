@@ -199,15 +199,15 @@
   .tabbar button .tab-ico { font-size: 20px; line-height: 1; }
   .tabbar button.active { color: var(--primary); font-weight: 600; }
   .page {
-    position: absolute; inset: 0;
-    opacity: 0; transform: translateY(4px);
-    pointer-events: none;
-    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+    display: none;
   }
   .page.active {
-    opacity: 1; transform: translateY(0);
-    pointer-events: auto;
-    position: relative;
+    display: block;
+    animation: pageIn 200ms var(--ease-out);
+  }
+  @keyframes pageIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   /* === 主页快捷入口 === */
