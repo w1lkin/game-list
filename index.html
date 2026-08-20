@@ -1049,13 +1049,9 @@ async function loadBests() {
             g.diffs.map(d => {
               // human-bench 的 diffs 是子测试分类（按 meta.testId 过滤），其他游戏按 difficulty
               if (g.id === 'human-bench') {
-                // asc 类（reaction/aim_trainer）取最后一条（最小值），desc 类取第一条（最大值）
-                const limit = HUMAN_BENCH_ASC.has(d.key) ? 10 : 1;
-                return GP.getLeaderboard(g.id, limit, null, 'testId', d.key).then(items => {
-                  const top = items && items.length > 0
-                    ? (HUMAN_BENCH_ASC.has(d.key) ? items[items.length - 1] : items[0])
-                    : null;
-                  return { label: d.label, top };
+                const dir = HUMAN_BENCH_ASC.has(d.key) ? 'asc' : 'desc';
+                return GP.getLeaderboard(g.id, 1, null, 'testId', d.key, true, dir).then(items => {
+                  return { label: d.label, top: items[0] || null };
                 });
               }
               return GP.getLeaderboard(g.id, 1, d.key).then(items => ({ label: d.label, top: items[0] }));
@@ -1349,7 +1345,11 @@ async function renderLeaderboardContent(g) {
       const results = await Promise.all(
         g.diffs.map(d => {
           // 不过滤同用户，显示所有上分成绩
-          if (isHB) return GP.getLeaderboard(g.id, 10, null, 'testId', d.key, false).then(items => ({ label: d.label, key: d.key, items }));
+          // reaction/aim_trainer 越小越好，API 传 direction=asc 确保返回正确排序
+          if (isHB) {
+            const dir = HUMAN_BENCH_ASC.has(d.key) ? 'asc' : 'desc';
+            return GP.getLeaderboard(g.id, 10, null, 'testId', d.key, false, dir).then(items => ({ label: d.label, key: d.key, items }));
+          }
           return GP.getLeaderboard(g.id, 10, d.key, null, null, false).then(items => ({ label: d.label, key: d.key, items }));
         })
       );
@@ -1364,10 +1364,6 @@ async function renderLeaderboardContent(g) {
 
       content.innerHTML = `<h2>🏆 ${esc(g.name)} 天梯榜</h2>` + results.map((r, ri) => {
         let items = r.items || [];
-        // human-bench 的 reaction/aim_trainer 越小越好，前端反转排序
-        if (isHB && HUMAN_BENCH_ASC.has(r.key) && items.length > 0) {
-          items = [...items].reverse();
-        }
         const groupId = 'lb-group-' + ri;
         let html = `<div class="lb-diff-title">
           ${esc(r.label)}
